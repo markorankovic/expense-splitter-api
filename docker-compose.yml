@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: expense_splitter_db
+    environment:
+      POSTGRES_USER: splitter
+      POSTGRES_PASSWORD: splitter
+      POSTGRES_DB: splitter
+    ports:
+      - "5432:5432"
+    volumes:
+      - splitter_pgdata:/var/lib/postgresql/data
+
+volumes:
+  splitter_pgdata:
