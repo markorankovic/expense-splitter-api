@@ -12,8 +12,36 @@ model HealthCheck {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id               String        @id @default(cuid())
+  email            String        @unique
+  passwordHash     String
+  createdAt        DateTime      @default(now())
+  ownedGroups      Group[]       @relation("GroupOwner")
+  groupMemberships GroupMember[]
+}
+
+model Group {
+  id        String        @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  createdAt DateTime      @default(now())
+  members   GroupMember[]
+}
+
+model GroupMember {
+  id        String    @id @default(cuid())
+  groupId   String
+  userId    String
+  role      GroupRole
+  createdAt DateTime  @default(now())
+  group     Group     @relation(fields: [groupId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+enum GroupRole {
+  owner
+  member
 }
