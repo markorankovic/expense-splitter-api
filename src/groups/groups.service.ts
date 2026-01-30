@@ -34,12 +34,24 @@ export class GroupsService {
     });
   }
 
-  async listGroups(userId: string) {
-    return this.prisma.group.findMany({
-      where: { members: { some: { userId } } },
-      select: { id: true, name: true, createdAt: true, ownerId: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async listGroups(userId: string, pagination?: { page?: number; pageSize?: number }) {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+    const where = { members: { some: { userId } } };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.group.findMany({
+        where,
+        select: { id: true, name: true, createdAt: true, ownerId: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.group.count({ where }),
+    ]);
+
+    return { items, page, pageSize, total };
   }
 
   async getGroup(userId: string, groupId: string) {

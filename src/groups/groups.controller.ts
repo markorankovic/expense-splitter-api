@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationDto } from '../common/pagination.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { GroupsService } from './groups.service';
@@ -18,8 +19,8 @@ export class GroupsController {
   }
 
   @Get()
-  list(@Req() req: AuthRequest) {
-    return this.groupsService.listGroups(req.user.id);
+  list(@Req() req: AuthRequest, @Query() query: PaginationDto) {
+    return this.groupsService.listGroups(req.user.id, query);
   }
 
   @Get(':id')

@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationDto } from '../common/pagination.dto';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { ExpensesService } from './expenses.service';
 
@@ -21,8 +22,12 @@ export class ExpensesController {
   }
 
   @Get()
-  list(@Req() req: AuthRequest, @Param('groupId') groupId: string) {
-    return this.expensesService.listExpenses(req.user.id, groupId);
+  list(
+    @Req() req: AuthRequest,
+    @Param('groupId') groupId: string,
+    @Query() query: PaginationDto,
+  ) {
+    return this.expensesService.listExpenses(req.user.id, groupId, query);
   }
 
   @Get(':expenseId')

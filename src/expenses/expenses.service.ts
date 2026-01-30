@@ -58,20 +58,36 @@ export class ExpensesService {
     });
   }
 
-  async listExpenses(userId: string, groupId: string) {
+  async listExpenses(
+    userId: string,
+    groupId: string,
+    pagination?: { page?: number; pageSize?: number },
+  ) {
     await this.ensureMember(userId, groupId);
 
-    return this.prisma.expense.findMany({
-      where: { groupId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        description: true,
-        amount: true,
-        paidByUserId: true,
-        createdAt: true,
-      },
-    });
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+    const where = { groupId };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.expense.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          description: true,
+          amount: true,
+          paidByUserId: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.expense.count({ where }),
+    ]);
+
+    return { items, page, pageSize, total };
   }
 
   async getExpense(userId: string, groupId: string, expenseId: string) {
