@@ -23,6 +23,15 @@ type MeResponse = {
   id: string;
 };
 
+type GroupMember = {
+  id: string;
+  email: string;
+};
+
+type GroupDetailsResponse = Group & {
+  members: GroupMember[];
+};
+
 const gbpToPence = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -56,6 +65,11 @@ export default function App() {
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState('');
+  const [memberEmail, setMemberEmail] = useState('');
+  const [memberStatus, setMemberStatus] = useState('');
 
   const token = localStorage.getItem('accessToken') ?? '';
 
@@ -105,6 +119,30 @@ export default function App() {
     }
   };
 
+  const fetchMembers = async (groupId: string) => {
+    if (!token) {
+      return;
+    }
+    setMembersError('');
+    setMembersLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        throw new Error(message?.message ?? 'Failed to load members');
+      }
+      const data: GroupDetailsResponse = await response.json();
+      setMembers(data.members);
+    } catch (err) {
+      setMembersError(err instanceof Error ? err.message : 'Failed to load members');
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (loggedIn) {
       fetchMe();
@@ -113,8 +151,17 @@ export default function App() {
       setGroups([]);
       setActiveGroupId(null);
       setMeId(null);
+      setMembers([]);
     }
   }, [loggedIn]);
+
+  useEffect(() => {
+    if (activeGroupId) {
+      fetchMembers(activeGroupId);
+    } else {
+      setMembers([]);
+    }
+  }, [activeGroupId]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -174,9 +221,41 @@ export default function App() {
     }
   };
 
+  const handleAddMember = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!token || !activeGroupId || !memberEmail.trim()) {
+      return;
+    }
+    setMemberStatus('');
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/groups/${activeGroupId}/members`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ email: memberEmail.trim() }),
+        },
+      );
+
+      if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        throw new Error(message?.message ?? 'Failed to add member');
+      }
+
+      setMemberEmail('');
+      setMemberStatus('Member added.');
+      await fetchMembers(activeGroupId);
+    } catch (err) {
+      setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
+    }
+  };
+
   const handleCreateExpense = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token || !activeGroupId || !meId) {
+    if (!token || !activeGroupId || !meId || members.length === 0) {
       return;
     }
     const pence = gbpToPence(expenseAmount);
@@ -184,6 +263,12 @@ export default function App() {
       setExpenseStatus('Enter a valid amount (e.g. 12.34).');
       return;
     }
+    const base = Math.floor(pence / members.length);
+    const remainder = pence % members.length;
+    const splits = members.map((member, index) => ({
+      userId: member.id,
+      amount: index < remainder ? base + 1 : base,
+    }));
     setExpenseStatus('');
     try {
       const response = await fetch(
@@ -198,7 +283,7 @@ export default function App() {
             description: expenseDescription.trim(),
             amount: pence,
             paidByUserId: meId,
-            splits: [{ userId: meId, amount: pence }],
+            splits,
           }),
         },
       );
@@ -228,6 +313,10 @@ export default function App() {
     setExpenseDescription('');
     setExpenseAmount('');
     setExpenseStatus('');
+    setMembers([]);
+    setMembersError('');
+    setMemberEmail('');
+    setMemberStatus('');
   };
 
   return (
@@ -290,6 +379,49 @@ export default function App() {
             </div>
 
             {activeGroupId ? (
+              <div className="members-card">
+                <h2 className="subtitle">Members</h2>
+                <form onSubmit={handleAddMember} className="form inline">
+                  <label className="label">
+                    Email
+                    <input
+                      className="input"
+                      type="email"
+                      value={memberEmail}
+                      onChange={(event) => setMemberEmail(event.target.value)}
+                      placeholder="person@example.com"
+                      required
+                    />
+                  </label>
+                  <button className="button" type="submit" disabled={!memberEmail.trim()}>
+                    Add
+                  </button>
+                </form>
+                {membersError ? <p className="error">{membersError}</p> : null}
+                {memberStatus ? (
+                  <p className={memberStatus === 'Member added.' ? 'success' : 'error'}>
+                    {memberStatus}
+                  </p>
+                ) : null}
+                <div className="members-list">
+                  {membersLoading ? (
+                    <p className="muted">Loading members...</p>
+                  ) : members.length === 0 ? (
+                    <p className="muted">No members yet.</p>
+                  ) : (
+                    <ul>
+                      {members.map((member) => (
+                        <li key={member.id}>
+                          <span className="member-email">{member.email}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {activeGroupId ? (
               <div className="expense-card">
                 <h2 className="subtitle">Add expense</h2>
                 <form onSubmit={handleCreateExpense} className="form">
@@ -320,7 +452,11 @@ export default function App() {
                       {expenseStatus}
                     </p>
                   ) : null}
-                  <button className="button" type="submit">
+                  <button
+                    className="button"
+                    type="submit"
+                    disabled={membersLoading || members.length === 0}
+                  >
                     Add expense
                   </button>
                 </form>
