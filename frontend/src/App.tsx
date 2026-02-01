@@ -21,6 +21,7 @@ type GroupsResponse = {
 
 type MeResponse = {
   id: string;
+  email: string;
 };
 
 type GroupMember = {
@@ -85,6 +86,7 @@ export default function App() {
   const [groupName, setGroupName] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
+  const [meEmail, setMeEmail] = useState<string | null>(null);
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
@@ -113,8 +115,10 @@ export default function App() {
       }
       const data: MeResponse = await response.json();
       setMeId(data.id);
+      setMeEmail(data.email);
     } catch {
       setMeId(null);
+      setMeEmail(null);
     }
   };
 
@@ -212,6 +216,7 @@ export default function App() {
       setGroups([]);
       setActiveGroupId(null);
       setMeId(null);
+      setMeEmail(null);
       setMembers([]);
       setBalances(null);
       setSettle(null);
@@ -386,6 +391,7 @@ export default function App() {
     setBalances(null);
     setSettle(null);
     setBalancesError('');
+    setMeEmail(null);
   };
 
   return (
@@ -395,7 +401,9 @@ export default function App() {
 
         {loggedIn ? (
           <div className="logged-in">
-            <p className="success">Logged in</p>
+            <p className="success">
+              Logged in{meEmail ? ` as ${meEmail}` : ''}
+            </p>
 
             <form onSubmit={handleCreateGroup} className="form inline">
               <label className="label">
