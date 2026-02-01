@@ -202,7 +202,7 @@ body {
   padding: 8px 10px;
   border-radius: 10px;
   background: #f6f4f2;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .member-email {
@@ -216,4 +216,39 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.balances-card {
+  border-top: 1px solid #efecea;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.balances-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.balances-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balances-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f6f4f2;
+  font-size: 14px;
 }

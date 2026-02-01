@@ -32,6 +32,16 @@ type GroupDetailsResponse = Group & {
   members: GroupMember[];
 };
 
+type BalancesResponse = {
+  groupId: string;
+  balances: { userId: string; balance: number }[];
+};
+
+type SettleResponse = {
+  groupId: string;
+  transfers: { fromUserId: string; toUserId: string; amount: number }[];
+};
+
 const gbpToPence = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -44,6 +54,19 @@ const gbpToPence = (value: string) => {
   const normalizedFraction = fraction.padEnd(2, '0');
   const pence = Number(whole) * 100 + Number(normalizedFraction);
   return Number.isFinite(pence) && pence > 0 ? pence : null;
+};
+
+const formatMoney = (pence: number) => {
+  const sign = pence < 0 ? '-' : '';
+  const abs = Math.abs(pence);
+  const pounds = Math.floor(abs / 100);
+  const pennies = String(abs % 100).padStart(2, '0');
+  return `${sign}£${pounds}.${pennies}`;
+};
+
+const formatMemberLabel = (memberId: string, members: GroupMember[]) => {
+  const match = members.find((member) => member.id === memberId);
+  return match?.email ?? memberId;
 };
 
 const API_BASE_URL = 'http://localhost:3000';
@@ -70,6 +93,10 @@ export default function App() {
   const [membersError, setMembersError] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
+  const [balances, setBalances] = useState<BalancesResponse | null>(null);
+  const [settle, setSettle] = useState<SettleResponse | null>(null);
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  const [balancesError, setBalancesError] = useState('');
 
   const token = localStorage.getItem('accessToken') ?? '';
 
@@ -143,6 +170,42 @@ export default function App() {
     }
   };
 
+  const fetchBalancesAndSettle = async (groupId: string) => {
+    if (!token) {
+      return;
+    }
+    setBalancesError('');
+    setBalancesLoading(true);
+    try {
+      const [balancesResponse, settleResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/groups/${groupId}/balances`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE_URL}/groups/${groupId}/settle`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (!balancesResponse.ok || !settleResponse.ok) {
+        const message = await balancesResponse.json().catch(() => null);
+        throw new Error(message?.message ?? 'Failed to load balances');
+      }
+
+      const balancesData: BalancesResponse = await balancesResponse.json();
+      const settleData: SettleResponse = await settleResponse.json();
+      setBalances(balancesData);
+      setSettle(settleData);
+    } catch (err) {
+      setBalancesError(
+        err instanceof Error ? err.message : 'Failed to load balances',
+      );
+      setBalances(null);
+      setSettle(null);
+    } finally {
+      setBalancesLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (loggedIn) {
       fetchMe();
@@ -152,14 +215,19 @@ export default function App() {
       setActiveGroupId(null);
       setMeId(null);
       setMembers([]);
+      setBalances(null);
+      setSettle(null);
     }
   }, [loggedIn]);
 
   useEffect(() => {
     if (activeGroupId) {
       fetchMembers(activeGroupId);
+      fetchBalancesAndSettle(activeGroupId);
     } else {
       setMembers([]);
+      setBalances(null);
+      setSettle(null);
     }
   }, [activeGroupId]);
 
@@ -317,6 +385,9 @@ export default function App() {
     setMembersError('');
     setMemberEmail('');
     setMemberStatus('');
+    setBalances(null);
+    setSettle(null);
+    setBalancesError('');
   };
 
   return (
@@ -460,6 +531,60 @@ export default function App() {
                     Add expense
                   </button>
                 </form>
+              </div>
+            ) : null}
+
+            {activeGroupId ? (
+              <div className="balances-card">
+                <div className="balances-header">
+                  <h2 className="subtitle">Balances</h2>
+                  <button
+                    type="button"
+                    className="button ghost"
+                    onClick={() => fetchBalancesAndSettle(activeGroupId)}
+                    disabled={balancesLoading}
+                  >
+                    Refresh
+                  </button>
+                </div>
+                {balancesError ? <p className="error">{balancesError}</p> : null}
+                {balancesLoading ? (
+                  <p className="muted">Loading balances...</p>
+                ) : balances ? (
+                  <ul className="balances-list">
+                    {balances.balances.map((entry) => (
+                      <li key={entry.userId}>
+                        <span>{formatMemberLabel(entry.userId, members)}</span>
+                        <span>{formatMoney(entry.balance)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">No balances yet.</p>
+                )}
+
+                <h2 className="subtitle">Settle</h2>
+                {balancesLoading ? (
+                  <p className="muted">Loading settlements...</p>
+                ) : settle ? (
+                  <ul className="balances-list">
+                    {settle.transfers.length === 0 ? (
+                      <li className="muted">No transfers needed.</li>
+                    ) : (
+                      settle.transfers.map((transfer, index) => (
+                        <li key={`${transfer.fromUserId}-${transfer.toUserId}-${index}`}>
+                          <span>
+                            {formatMemberLabel(transfer.fromUserId, members)} →{' '}
+                            {formatMemberLabel(transfer.toUserId, members)}
+                          </span>
+                          <span>{formatMoney(transfer.amount)}</span>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                ) : (
+                  <p className="muted">No settlements yet.</p>
+                )}
               </div>
             ) : null}
           </div>
