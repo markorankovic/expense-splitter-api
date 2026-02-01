@@ -199,8 +199,6 @@ export default function App() {
       setBalancesError(
         err instanceof Error ? err.message : 'Failed to load balances',
       );
-      setBalances(null);
-      setSettle(null);
     } finally {
       setBalancesLoading(false);
     }
@@ -548,9 +546,7 @@ export default function App() {
                   </button>
                 </div>
                 {balancesError ? <p className="error">{balancesError}</p> : null}
-                {balancesLoading ? (
-                  <p className="muted">Loading balances...</p>
-                ) : balances ? (
+                {balances ? (
                   <ul className="balances-list">
                     {balances.balances.map((entry) => (
                       <li key={entry.userId}>
@@ -564,9 +560,7 @@ export default function App() {
                 )}
 
                 <h2 className="subtitle">Settle</h2>
-                {balancesLoading ? (
-                  <p className="muted">Loading settlements...</p>
-                ) : settle ? (
+                {settle ? (
                   <ul className="balances-list">
                     {settle.transfers.length === 0 ? (
                       <li className="muted">No transfers needed.</li>
