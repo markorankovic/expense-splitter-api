@@ -405,30 +405,27 @@ export default function App() {
               Logged in{meEmail ? ` as ${meEmail}` : ''}
             </p>
 
-            <form onSubmit={handleCreateGroup} className="form inline">
-              <label className="label">
-                New group
-                <input
-                  className="input"
-                  type="text"
-                  value={groupName}
-                  onChange={(event) => setGroupName(event.target.value)}
-                  placeholder="Weekend trip"
-                  required
-                />
-              </label>
-              <button className="button" type="submit" disabled={!groupName.trim()}>
-                Create
-              </button>
-            </form>
-
-            {groupsError ? <p className="error">{groupsError}</p> : null}
-
             <div className="groups">
-              <div className="groups-header">
-                <h2 className="subtitle">Your groups</h2>
-                {groupsLoading ? <span className="muted">Loading...</span> : null}
-              </div>
+              <h2 className="subtitle">Groups</h2>
+              <form onSubmit={handleCreateGroup} className="form inline">
+                <label className="label">
+                  New group
+                  <input
+                    className="input"
+                    type="text"
+                    value={groupName}
+                    onChange={(event) => setGroupName(event.target.value)}
+                    placeholder="Weekend trip"
+                    required
+                  />
+                </label>
+                <button className="button" type="submit" disabled={!groupName.trim()}>
+                  Create
+                </button>
+              </form>
+
+              {groupsError ? <p className="error">{groupsError}</p> : null}
+              {groupsLoading ? <span className="muted">Loading...</span> : null}
               {groups.length === 0 && !groupsLoading ? (
                 <p className="muted">No groups yet.</p>
               ) : (
