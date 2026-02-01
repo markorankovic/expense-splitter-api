@@ -548,12 +548,19 @@ export default function App() {
                 {balancesError ? <p className="error">{balancesError}</p> : null}
                 {balances ? (
                   <ul className="balances-list">
-                    {balances.balances.map((entry) => (
-                      <li key={entry.userId}>
-                        <span>{formatMemberLabel(entry.userId, members)}</span>
-                        <span>{formatMoney(entry.balance)}</span>
-                      </li>
-                    ))}
+                    {balances.balances.filter((entry) => entry.balance !== 0).length ===
+                    0 ? (
+                      <li className="muted">No balances yet.</li>
+                    ) : (
+                      balances.balances
+                        .filter((entry) => entry.balance !== 0)
+                        .map((entry) => (
+                          <li key={entry.userId}>
+                            <span>{formatMemberLabel(entry.userId, members)}</span>
+                            <span>{formatMoney(entry.balance)}</span>
+                          </li>
+                        ))
+                    )}
                   </ul>
                 ) : (
                   <p className="muted">No balances yet.</p>
