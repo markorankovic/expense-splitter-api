@@ -19,6 +19,24 @@ type GroupsResponse = {
   total: number;
 };
 
+type MeResponse = {
+  id: string;
+};
+
+const gbpToPence = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
+    return null;
+  }
+  const [whole, fraction = ''] = trimmed.split('.');
+  const normalizedFraction = fraction.padEnd(2, '0');
+  const pence = Number(whole) * 100 + Number(normalizedFraction);
+  return Number.isFinite(pence) && pence > 0 ? pence : null;
+};
+
 const API_BASE_URL = 'http://localhost:3000';
 
 export default function App() {
@@ -34,8 +52,30 @@ export default function App() {
   const [groupsError, setGroupsError] = useState('');
   const [groupName, setGroupName] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [meId, setMeId] = useState<string | null>(null);
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseStatus, setExpenseStatus] = useState('');
 
   const token = localStorage.getItem('accessToken') ?? '';
+
+  const fetchMe = async () => {
+    if (!token) {
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data: MeResponse = await response.json();
+      setMeId(data.id);
+    } catch {
+      setMeId(null);
+    }
+  };
 
   const fetchGroups = async () => {
     if (!token) {
@@ -67,10 +107,12 @@ export default function App() {
 
   useEffect(() => {
     if (loggedIn) {
+      fetchMe();
       fetchGroups();
     } else {
       setGroups([]);
       setActiveGroupId(null);
+      setMeId(null);
     }
   }, [loggedIn]);
 
@@ -96,6 +138,7 @@ export default function App() {
       setLoggedIn(true);
       setEmail('');
       setPassword('');
+      setExpenseStatus('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -131,6 +174,50 @@ export default function App() {
     }
   };
 
+  const handleCreateExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!token || !activeGroupId || !meId) {
+      return;
+    }
+    const pence = gbpToPence(expenseAmount);
+    if (!pence) {
+      setExpenseStatus('Enter a valid amount (e.g. 12.34).');
+      return;
+    }
+    setExpenseStatus('');
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/groups/${activeGroupId}/expenses`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            description: expenseDescription.trim(),
+            amount: pence,
+            paidByUserId: meId,
+            splits: [{ userId: meId, amount: pence }],
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        throw new Error(message?.message ?? 'Failed to add expense');
+      }
+
+      setExpenseDescription('');
+      setExpenseAmount('');
+      setExpenseStatus('Expense added.');
+    } catch (err) {
+      setExpenseStatus(
+        err instanceof Error ? err.message : 'Failed to add expense',
+      );
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     setLoggedIn(false);
@@ -138,6 +225,9 @@ export default function App() {
     setPassword('');
     setGroupName('');
     setGroupsError('');
+    setExpenseDescription('');
+    setExpenseAmount('');
+    setExpenseStatus('');
   };
 
   return (
@@ -198,6 +288,44 @@ export default function App() {
                 </ul>
               )}
             </div>
+
+            {activeGroupId ? (
+              <div className="expense-card">
+                <h2 className="subtitle">Add expense</h2>
+                <form onSubmit={handleCreateExpense} className="form">
+                  <label className="label">
+                    Description
+                    <input
+                      className="input"
+                      type="text"
+                      value={expenseDescription}
+                      onChange={(event) => setExpenseDescription(event.target.value)}
+                      placeholder="Dinner"
+                      required
+                    />
+                  </label>
+                  <label className="label">
+                    Amount (£)
+                    <input
+                      className="input"
+                      type="text"
+                      value={expenseAmount}
+                      onChange={(event) => setExpenseAmount(event.target.value)}
+                      placeholder="12.34"
+                      required
+                    />
+                  </label>
+                  {expenseStatus ? (
+                    <p className={expenseStatus === 'Expense added.' ? 'success' : 'error'}>
+                      {expenseStatus}
+                    </p>
+                  ) : null}
+                  <button className="button" type="submit">
+                    Add expense
+                  </button>
+                </form>
+              </div>
+            ) : null}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="form">
