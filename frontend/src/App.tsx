@@ -105,6 +105,7 @@ export default function App() {
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
+  const [registerStatus, setRegisterStatus] = useState('');
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState('');
@@ -291,6 +292,7 @@ export default function App() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
+    setRegisterStatus('');
     setLoading(true);
 
     try {
@@ -311,10 +313,38 @@ export default function App() {
       setEmail('');
       setPassword('');
       setExpenseStatus('');
+      setRegisterStatus('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!email || !password) {
+      setRegisterStatus('Email and password are required.');
+      return;
+    }
+    setError('');
+    setRegisterStatus('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        throw new Error(message?.message ?? 'Registration failed');
+      }
+
+      setRegisterStatus('Registered. You can now log in.');
+    } catch (err) {
+      setRegisterStatus(
+        err instanceof Error ? err.message : 'Registration failed',
+      );
     }
   };
 
@@ -702,9 +732,22 @@ export default function App() {
             </label>
 
             {error ? <p className="error">{error}</p> : null}
+            {registerStatus ? (
+              <p className={registerStatus.startsWith('Registered') ? 'success' : 'error'}>
+                {registerStatus}
+              </p>
+            ) : null}
 
             <button className="button" type="submit" disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
+            </button>
+            <button
+              className="button ghost"
+              type="button"
+              onClick={handleRegister}
+              disabled={loading}
+            >
+              Register
             </button>
           </form>
         )}
