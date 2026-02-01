@@ -123,13 +123,6 @@ body {
   align-items: stretch;
 }
 
-.logged-in-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 .groups {
   display: flex;
   flex-direction: column;
@@ -251,4 +244,11 @@ body {
   border-radius: 10px;
   background: #f6f4f2;
   font-size: 14px;
+}
+
+.logout-card {
+  border-top: 1px solid #efecea;
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
 }

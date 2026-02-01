@@ -395,12 +395,7 @@ export default function App() {
 
         {loggedIn ? (
           <div className="logged-in">
-            <div className="logged-in-header">
-              <p className="success">Logged in</p>
-              <button type="button" onClick={handleLogout} className="button ghost">
-                Log out
-              </button>
-            </div>
+            <p className="success">Logged in</p>
 
             <form onSubmit={handleCreateGroup} className="form inline">
               <label className="label">
@@ -581,6 +576,12 @@ export default function App() {
                 )}
               </div>
             ) : null}
+
+            <div className="logout-card">
+              <button type="button" onClick={handleLogout} className="button ghost">
+                Log out
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="form">
