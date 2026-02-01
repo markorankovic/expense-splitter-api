@@ -207,6 +207,32 @@ body {
   gap: 12px;
 }
 
+.expenses-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expenses-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f6f4f2;
+  font-size: 14px;
+}
+
+.expense-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .balances-card {
   border-top: 1px solid #efecea;
   padding-top: 16px;

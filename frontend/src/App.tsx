@@ -43,6 +43,21 @@ type SettleResponse = {
   transfers: { fromUserId: string; toUserId: string; amount: number }[];
 };
 
+type Expense = {
+  id: string;
+  description: string;
+  amount: number;
+  paidByUserId: string;
+  createdAt: string;
+};
+
+type ExpensesResponse = {
+  items: Expense[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
+
 const gbpToPence = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -99,6 +114,9 @@ export default function App() {
   const [settle, setSettle] = useState<SettleResponse | null>(null);
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [balancesError, setBalancesError] = useState('');
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expensesLoading, setExpensesLoading] = useState(false);
+  const [expensesError, setExpensesError] = useState('');
 
   const token = localStorage.getItem('accessToken') ?? '';
 
@@ -203,8 +221,41 @@ export default function App() {
       setBalancesError(
         err instanceof Error ? err.message : 'Failed to load balances',
       );
+      setBalances(null);
+      setSettle(null);
     } finally {
       setBalancesLoading(false);
+    }
+  };
+
+  const fetchExpenses = async (groupId: string) => {
+    if (!token) {
+      return;
+    }
+    setExpensesError('');
+    setExpensesLoading(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/groups/${groupId}/expenses?page=1&pageSize=50`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        throw new Error(message?.message ?? 'Failed to load expenses');
+      }
+
+      const data: ExpensesResponse = await response.json();
+      setExpenses(data.items);
+    } catch (err) {
+      setExpensesError(
+        err instanceof Error ? err.message : 'Failed to load expenses',
+      );
+      setExpenses([]);
+    } finally {
+      setExpensesLoading(false);
     }
   };
 
@@ -220,6 +271,7 @@ export default function App() {
       setMembers([]);
       setBalances(null);
       setSettle(null);
+      setExpenses([]);
     }
   }, [loggedIn]);
 
@@ -227,10 +279,12 @@ export default function App() {
     if (activeGroupId) {
       fetchMembers(activeGroupId);
       fetchBalancesAndSettle(activeGroupId);
+      fetchExpenses(activeGroupId);
     } else {
       setMembers([]);
       setBalances(null);
       setSettle(null);
+      setExpenses([]);
     }
   }, [activeGroupId]);
 
@@ -319,6 +373,7 @@ export default function App() {
       setMemberEmail('');
       setMemberStatus('Member added.');
       await fetchMembers(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
     } catch (err) {
       setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
     }
@@ -367,6 +422,8 @@ export default function App() {
       setExpenseDescription('');
       setExpenseAmount('');
       setExpenseStatus('Expense added.');
+      await fetchExpenses(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
     } catch (err) {
       setExpenseStatus(
         err instanceof Error ? err.message : 'Failed to add expense',
@@ -392,6 +449,8 @@ export default function App() {
     setSettle(null);
     setBalancesError('');
     setMeEmail(null);
+    setExpenses([]);
+    setExpensesError('');
   };
 
   return (
@@ -492,7 +551,7 @@ export default function App() {
 
             {activeGroupId ? (
               <div className="expense-card">
-                <h2 className="subtitle">Add expense</h2>
+                <h2 className="subtitle">Expenses</h2>
                 <form onSubmit={handleCreateExpense} className="form">
                   <label className="label">
                     Description
@@ -529,6 +588,26 @@ export default function App() {
                     Add expense
                   </button>
                 </form>
+                {expensesError ? <p className="error">{expensesError}</p> : null}
+                {expensesLoading ? (
+                  <p className="muted">Loading expenses...</p>
+                ) : expenses.length === 0 ? (
+                  <p className="muted">No expenses yet.</p>
+                ) : (
+                  <ul className="expenses-list">
+                    {expenses.map((expense) => (
+                      <li key={expense.id}>
+                        <div>
+                          <p className="expense-name">{expense.description}</p>
+                          <p className="muted">
+                            Paid by {formatMemberLabel(expense.paidByUserId, members)}
+                          </p>
+                        </div>
+                        <span>{formatMoney(expense.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ) : null}
 
