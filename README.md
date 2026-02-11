@@ -59,6 +59,7 @@ How to use the UI:
 3. Create a group.
 4. Add members by specifying the email of any registered users.
 5. Add an expense by filling in the description and the amount in £. Repeat for multiple expenses.
+6. Check balances and settle to view the resulting transactions for the total expense in the selected group.
 
 ## Tests
 ```bash
@@ -73,14 +74,6 @@ Core capabilities:
 3. Groups and memberships
 4. Expenses and shares
 5. Balances and settlement algorithm
-6. Pagination and small polish
+6. Pagination
 
 Use `src/` for controllers/services and `prisma/` for schema and migrations.
-
-## Useful commands
-```bash
-npm run start:dev
-npm test
-npm run test:e2e
-npx prisma migrate dev
-```
