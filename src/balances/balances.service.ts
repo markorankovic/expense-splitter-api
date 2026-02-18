@@ -8,14 +8,13 @@ export class BalancesService {
   async getBalances(userId: string, groupId: string) {
     await this.ensureMember(userId, groupId);
 
-    // TODO: Maybe call this members?
-    const memberIds = await this.prisma.groupMember.findMany({
+    const members = await this.prisma.groupMember.findMany({
       where: { groupId },
       select: { userId: true },
     });
 
     const balances = new Map<string, number>();
-    memberIds.forEach((member) => balances.set(member.userId, 0));
+    members.forEach((member) => balances.set(member.userId, 0));
 
     const expenses = await this.prisma.expense.findMany({
       where: { groupId },
@@ -40,7 +39,7 @@ export class BalancesService {
 
     return {
       groupId,
-      balances: memberIds.map((member) => ({
+      balances: members.map((member) => ({
         userId: member.userId,
         balance: balances.get(member.userId) ?? 0,
       })),
