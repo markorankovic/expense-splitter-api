@@ -58,6 +58,11 @@ type ExpensesResponse = {
   total: number;
 };
 
+type RegisterStatus = {
+  kind: 'success' | 'error';
+  message: string;
+};
+
 const gbpToPence = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -100,7 +105,7 @@ export default function App() {
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
-  const [registerStatus, setRegisterStatus] = useState('');
+  const [registerStatus, setRegisterStatus] = useState<RegisterStatus | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState('');
@@ -317,7 +322,7 @@ export default function App() {
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
-    setRegisterStatus('');
+    setRegisterStatus(null);
     setLoading(true);
 
     try {
@@ -340,7 +345,7 @@ export default function App() {
       setEmail('');
       setPassword('');
       setExpenseStatus('');
-      setRegisterStatus('');
+      setRegisterStatus(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -350,11 +355,14 @@ export default function App() {
 
   const handleRegister = async () => {
     if (!email || !password) {
-      setRegisterStatus('Email and password are required.');
+      setRegisterStatus({
+        kind: 'error',
+        message: 'Email and password are required.',
+      });
       return;
     }
     setError('');
-    setRegisterStatus('');
+    setRegisterStatus(null);
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
@@ -369,11 +377,15 @@ export default function App() {
         throw new Error(message?.message ?? 'Registration failed');
       }
 
-      setRegisterStatus('Registered. You can now log in.');
+      setRegisterStatus({
+        kind: 'success',
+        message: 'Registered. You can now log in.',
+      });
     } catch (err) {
-      setRegisterStatus(
-        err instanceof Error ? err.message : 'Registration failed',
-      );
+      setRegisterStatus({
+        kind: 'error',
+        message: err instanceof Error ? err.message : 'Registration failed',
+      });
     }
   };
 
@@ -769,10 +781,9 @@ export default function App() {
             </label>
 
             {error ? <p className="error">{error}</p> : null}
-            // TODO: Maybe do enums for registerStatus and then have a description associated with it
             {registerStatus ? (
-              <p className={registerStatus.startsWith('Registered') ? 'success' : 'error'}>
-                {registerStatus}
+              <p className={registerStatus.kind === 'success' ? 'success' : 'error'}>
+                {registerStatus.message}
               </p>
             ) : null}
 
