@@ -133,12 +133,15 @@ export default function App() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
         return;
       }
       const data: MeResponse = await response.json();
       setMeId(data.id);
       setMeEmail(data.email);
-    } catch {
+    } catch (err) {
+      console.error('Failed to load current user', err);
       setMeId(null);
       setMeEmail(null);
     }
@@ -158,6 +161,8 @@ export default function App() {
       });
 
       if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
         // TODO: Didn't do this for fetchMe, why not?
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load groups');
@@ -187,6 +192,8 @@ export default function App() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load members');
       }
@@ -255,6 +262,8 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
+        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load expenses');
       }
 
@@ -278,6 +287,7 @@ export default function App() {
     } else {
       setGroups([]);
       setActiveGroupId(null);
+      console.error('Failed to load current user', err);
       setMeId(null);
       setMeEmail(null);
       setMembers([]);
@@ -316,6 +326,8 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
+        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Login failed');
       }
 
@@ -349,6 +361,8 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
+        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Registration failed');
       }
 
@@ -377,6 +391,8 @@ export default function App() {
       });
 
       if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to create group');
       }
@@ -409,6 +425,8 @@ export default function App() {
       );
 
       if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to add member');
       }
@@ -459,6 +477,8 @@ export default function App() {
       );
 
       if (!response.ok) {
+        const message = await response.json().catch(() => null);
+        console.error('Failed to load current user', message?.message ?? response.status);
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to add expense');
       }
