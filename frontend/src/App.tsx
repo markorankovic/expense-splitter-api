@@ -222,8 +222,10 @@ export default function App() {
       ]);
 
       if (!balancesResponse.ok || !settleResponse.ok) {
-        // TODO: What if the error is in the settle response?
-        const message = await balancesResponse.json().catch(() => null);
+        const failedResponse = !balancesResponse.ok
+          ? balancesResponse
+          : settleResponse;
+        const message = await failedResponse.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load balances');
       }
 
