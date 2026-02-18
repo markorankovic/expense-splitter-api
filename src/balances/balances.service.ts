@@ -6,7 +6,6 @@ export class BalancesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getBalances(userId: string, groupId: string) {
-    // TODO: Again a place to catch an error
     await this.ensureMember(userId, groupId);
 
     // TODO: Maybe call this members?
@@ -57,19 +56,16 @@ export class BalancesService {
     const debtors = balances
       .filter((entry) => entry.balance < 0)
       .map((entry) => ({ ...entry }));
-    // TODO: Why are we cloning the entries?
 
     const transfers: { fromUserId: string; toUserId: string; amount: number }[] = [];
 
     let i = 0;
     let j = 0;
 
-    // TODO: This algorithm might need to be redone altogether, there can only be one creditor for each group.
     while (i < debtors.length && j < creditors.length) {
       const debtor = debtors[i];
       const creditor = creditors[j];
 
-      // TODO: Shouldn't this just be the amount the debtor owes, not the minimum of the two?
       const amount = Math.min(creditor.balance, -debtor.balance);
       if (amount > 0) {
         transfers.push({
