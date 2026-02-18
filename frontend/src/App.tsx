@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 
 type LoginResponse = {
@@ -80,12 +80,6 @@ const formatMoney = (pence: number) => {
   return `${sign}£${pounds}.${pennies}`;
 };
 
-// TODO: See if it's possible to avoid doing the lookup this way
-const formatMemberLabel = (memberId: string, members: GroupMember[]) => {
-  const match = members.find((member) => member.id === memberId);
-  return match?.email ?? memberId;
-};
-
 // TODO: Move this to the .env file
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -120,8 +114,14 @@ export default function App() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [expensesError, setExpensesError] = useState('');
+  const memberEmailById = useMemo(
+    () => new Map(members.map((member) => [member.id, member.email])),
+    [members],
+  );
 
   const token = localStorage.getItem('accessToken') ?? '';
+  const formatMemberLabel = (memberId: string) =>
+    memberEmailById.get(memberId) ?? memberId;
 
   // TODO: Should consider maybe abstracting the fetch logic into a common function to reduce repetition.
 
@@ -645,7 +645,7 @@ export default function App() {
                         <div>
                           <p className="expense-name">{expense.description}</p>
                           <p className="muted">
-                            Paid by {formatMemberLabel(expense.paidByUserId, members)}
+                            Paid by {formatMemberLabel(expense.paidByUserId)}
                           </p>
                         </div>
                         <span>{formatMoney(expense.amount)}</span>
@@ -680,7 +680,7 @@ export default function App() {
                         .filter((entry) => entry.balance !== 0)
                         .map((entry) => (
                           <li key={entry.userId}>
-                            <span>{formatMemberLabel(entry.userId, members)}</span>
+                            <span>{formatMemberLabel(entry.userId)}</span>
                             <span>{formatMoney(entry.balance)}</span>
                           </li>
                         ))
@@ -699,8 +699,8 @@ export default function App() {
                       settle.transfers.map((transfer, index) => (
                         <li key={`${transfer.fromUserId}-${transfer.toUserId}-${index}`}>
                           <span>
-                            {formatMemberLabel(transfer.fromUserId, members)} →{' '}
-                            {formatMemberLabel(transfer.toUserId, members)}
+                            {formatMemberLabel(transfer.fromUserId)} →{' '}
+                            {formatMemberLabel(transfer.toUserId)}
                           </span>
                           <span>{formatMoney(transfer.amount)}</span>
                         </li>
