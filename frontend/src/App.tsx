@@ -156,7 +156,6 @@ export default function App() {
     if (!token) {
       return;
     }
-    // TODO: Do we even need the error to be set?
     setGroupsError('');
     setGroupsLoading(true);
     try {
@@ -166,9 +165,6 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
-        // TODO: Didn't do this for fetchMe, why not?
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load groups');
       }
@@ -194,15 +190,12 @@ export default function App() {
       });
       if (!response.ok) {
         const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
-        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load members');
       }
       const data: GroupDetailsResponse = await response.json();
       setMembers(data.members);
     } catch (err) {
       setMembersError(err instanceof Error ? err.message : 'Failed to load members');
-      // TODO: Should failing to load new members clear what's already there?
       setMembers([]);
     } finally {
       setMembersLoading(false);
@@ -265,8 +258,6 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
-        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load expenses');
       }
 
@@ -276,7 +267,6 @@ export default function App() {
       setExpensesError(
         err instanceof Error ? err.message : 'Failed to load expenses',
       );
-      // TODO: Should failing to load expenses clear what's already there?
       setExpenses([]);
     } finally {
       setExpensesLoading(false);
@@ -290,7 +280,6 @@ export default function App() {
     } else {
       setGroups([]);
       setActiveGroupId(null);
-      console.error('Failed to load current user', err);
       setMeId(null);
       setMeEmail(null);
       setMembers([]);
@@ -334,8 +323,6 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
-        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Login failed');
       }
 
@@ -372,8 +359,6 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
-        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Registration failed');
       }
 
@@ -407,13 +392,10 @@ export default function App() {
 
       if (!response.ok) {
         const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
-        const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to create group');
       }
 
       setGroupName('');
-      // TODO: Should we maybe instead just refetch the new group instead of clearing and re-fetching all groups?
       await fetchGroups();
     } catch (err) {
       setGroupsError(err instanceof Error ? err.message : 'Failed to create group');
@@ -440,8 +422,6 @@ export default function App() {
       );
 
       if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to add member');
       }
@@ -492,8 +472,6 @@ export default function App() {
       );
 
       if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        console.error('Failed to load current user', message?.message ?? response.status);
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to add expense');
       }
