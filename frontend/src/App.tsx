@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type SubmitEvent } from 'react';
 import './App.css';
 
 type LoginResponse = {
@@ -314,8 +314,7 @@ export default function App() {
     }
   }, [activeGroupId, groups]);
 
-  // TODO: React.FormEvent is deprecated
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
     setRegisterStatus('');
@@ -378,7 +377,7 @@ export default function App() {
     }
   };
 
-  const handleCreateGroup = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateGroup = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token || !groupName.trim()) {
       return;
@@ -409,7 +408,7 @@ export default function App() {
     }
   };
 
-  const handleAddMember = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddMember = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token || !activeGroupId || !memberEmail.trim()) {
       return;
@@ -445,7 +444,7 @@ export default function App() {
     }
   };
 
-  const handleCreateExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateExpense = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token || !activeGroupId || !meId || members.length === 0) {
       return;
