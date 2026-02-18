@@ -12,6 +12,7 @@ export class ExpensesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createExpense(userId: string, groupId: string, dto: CreateExpenseDto) {
+    // TODO: Consider catching an error here if the group doesn't exist.
     await this.ensureMember(userId, groupId);
 
     const splitTotal = dto.splits.reduce((sum, split) => sum + split.amount, 0);
@@ -25,6 +26,7 @@ export class ExpensesService {
       throw new BadRequestException('Duplicate split user');
     }
 
+    // TODO: Consider if sets are even needed here.
     const requiredUserIds = new Set([dto.paidByUserId, ...splitIds]);
     await this.ensureUsersInGroup(groupId, Array.from(requiredUserIds));
 
@@ -54,6 +56,7 @@ export class ExpensesService {
         })),
       });
 
+      // TODO: Is this part necessary?
       return expense;
     });
   }
@@ -65,6 +68,7 @@ export class ExpensesService {
   ) {
     await this.ensureMember(userId, groupId);
 
+    // TODO: Maybe default values should be moved to .env?
     const page = pagination?.page ?? 1;
     const pageSize = pagination?.pageSize ?? 20;
     const skip = (page - 1) * pageSize;

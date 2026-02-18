@@ -80,11 +80,13 @@ const formatMoney = (pence: number) => {
   return `${sign}£${pounds}.${pennies}`;
 };
 
+// TODO: See if it's possible to avoid doing the lookup this way
 const formatMemberLabel = (memberId: string, members: GroupMember[]) => {
   const match = members.find((member) => member.id === memberId);
   return match?.email ?? memberId;
 };
 
+// TODO: Move this to the .env file
 const API_BASE_URL = 'http://localhost:3000';
 
 export default function App() {
@@ -121,6 +123,8 @@ export default function App() {
 
   const token = localStorage.getItem('accessToken') ?? '';
 
+  // TODO: Should consider maybe abstracting the fetch logic into a common function to reduce repetition.
+
   const fetchMe = async () => {
     if (!token) {
       return;
@@ -145,20 +149,24 @@ export default function App() {
     if (!token) {
       return;
     }
+    // TODO: Do we even need the error to be set?
     setGroupsError('');
     setGroupsLoading(true);
     try {
+      // TODO: Might need to implement frontend pagination if there are lots of groups, but for now just get the first 50.
       const response = await fetch(`${API_BASE_URL}/groups?page=1&pageSize=50`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
+        // TODO: Didn't do this for fetchMe, why not?
         const message = await response.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load groups');
       }
 
       const data: GroupsResponse = await response.json();
       setGroups(data.items);
+      // TODO: This should maybe be inside a useEffect that watches groups and activeGroupId.
       if (!activeGroupId && data.items.length > 0) {
         setActiveGroupId(data.items[0].id);
       }
@@ -187,12 +195,14 @@ export default function App() {
       setMembers(data.members);
     } catch (err) {
       setMembersError(err instanceof Error ? err.message : 'Failed to load members');
+      // TODO: Should failing to load new members clear what's already there?
       setMembers([]);
     } finally {
       setMembersLoading(false);
     }
   };
 
+  // TODO: Maybe this should only fetch the settle and the settle data has the balances data in it as well to avoid needing to make two separate requests and keep them in sync?
   const fetchBalancesAndSettle = async (groupId: string) => {
     if (!token) {
       return;
@@ -210,6 +220,7 @@ export default function App() {
       ]);
 
       if (!balancesResponse.ok || !settleResponse.ok) {
+        // TODO: What if the error is in the settle response?
         const message = await balancesResponse.json().catch(() => null);
         throw new Error(message?.message ?? 'Failed to load balances');
       }
@@ -254,6 +265,7 @@ export default function App() {
       setExpensesError(
         err instanceof Error ? err.message : 'Failed to load expenses',
       );
+      // TODO: Should failing to load expenses clear what's already there?
       setExpenses([]);
     } finally {
       setExpensesLoading(false);
@@ -289,6 +301,7 @@ export default function App() {
     }
   }, [activeGroupId]);
 
+  // TODO: React.FormEvent is deprecated
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
@@ -370,6 +383,7 @@ export default function App() {
       }
 
       setGroupName('');
+      // TODO: Should we maybe instead just refetch the new group instead of clearing and re-fetching all groups?
       await fetchGroups();
     } catch (err) {
       setGroupsError(err instanceof Error ? err.message : 'Failed to create group');
@@ -402,6 +416,7 @@ export default function App() {
 
       setMemberEmail('');
       setMemberStatus('Member added.');
+      // TODO: Can we not avoid having to re-fetch all the members after adding a new one?
       await fetchMembers(activeGroupId);
       await fetchBalancesAndSettle(activeGroupId);
     } catch (err) {
@@ -732,6 +747,7 @@ export default function App() {
             </label>
 
             {error ? <p className="error">{error}</p> : null}
+            // TODO: Maybe do enums for registerStatus and then have a description associated with it
             {registerStatus ? (
               <p className={registerStatus.startsWith('Registered') ? 'success' : 'error'}>
                 {registerStatus}
