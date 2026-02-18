@@ -170,10 +170,6 @@ export default function App() {
 
       const data: GroupsResponse = await response.json();
       setGroups(data.items);
-      // TODO: This should maybe be inside a useEffect that watches groups and activeGroupId.
-      if (!activeGroupId && data.items.length > 0) {
-        setActiveGroupId(data.items[0].id);
-      }
     } catch (err) {
       setGroupsError(err instanceof Error ? err.message : 'Failed to load groups');
     } finally {
@@ -309,6 +305,12 @@ export default function App() {
       setExpenses([]);
     }
   }, [activeGroupId]);
+
+  useEffect(() => {
+    if (!activeGroupId && groups.length > 0) {
+      setActiveGroupId(groups[0].id);
+    }
+  }, [activeGroupId, groups]);
 
   // TODO: React.FormEvent is deprecated
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
