@@ -1,18 +1,21 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { GroupAccessService } from '../common/group-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 
 @Injectable()
 export class ExpensesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly groupAccess: GroupAccessService,
+  ) {}
 
   async createExpense(userId: string, groupId: string, dto: CreateExpenseDto) {
-    await this.ensureMember(userId, groupId);
+    await this.groupAccess.ensureMember(userId, groupId);
 
     const splitTotal = dto.splits.reduce((sum, split) => sum + split.amount, 0);
     if (splitTotal !== dto.amount) {
@@ -63,7 +66,7 @@ export class ExpensesService {
     groupId: string,
     pagination?: { page?: number; pageSize?: number },
   ) {
-    await this.ensureMember(userId, groupId);
+    await this.groupAccess.ensureMember(userId, groupId);
 
     const page = pagination?.page ?? 1;
     const pageSize = pagination?.pageSize ?? 20;
@@ -91,7 +94,7 @@ export class ExpensesService {
   }
 
   async getExpense(userId: string, groupId: string, expenseId: string) {
-    await this.ensureMember(userId, groupId);
+    await this.groupAccess.ensureMember(userId, groupId);
 
     const expense = await this.prisma.expense.findFirst({
       where: { id: expenseId, groupId },
@@ -111,26 +114,6 @@ export class ExpensesService {
     }
 
     return expense;
-  }
-
-  private async ensureMember(userId: string, groupId: string) {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
-      select: { id: true },
-    });
-
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
-
-    const membership = await this.prisma.groupMember.findUnique({
-      where: { groupId_userId: { groupId, userId } },
-      select: { id: true },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('Not a group member');
-    }
   }
 
   private async ensureUsersInGroup(groupId: string, userIds: string[]) {

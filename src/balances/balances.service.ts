@@ -1,12 +1,16 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { GroupAccessService } from '../common/group-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class BalancesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly groupAccess: GroupAccessService,
+  ) {}
 
   async getBalances(userId: string, groupId: string) {
-    await this.ensureMember(userId, groupId);
+    await this.groupAccess.ensureMember(userId, groupId);
 
     const members = await this.prisma.groupMember.findMany({
       where: { groupId },
@@ -55,7 +59,6 @@ export class BalancesService {
     const debtors = balances
       .filter((entry) => entry.balance < 0)
       .map((entry) => ({ ...entry }));
-
     const transfers: { fromUserId: string; toUserId: string; amount: number }[] = [];
 
     let i = 0;
@@ -87,26 +90,5 @@ export class BalancesService {
     }
 
     return { groupId, transfers };
-  }
-
-  // TODO: This function is used in multiple places, maybe move it to a common service?
-  private async ensureMember(userId: string, groupId: string) {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
-      select: { id: true },
-    });
-
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
-
-    const membership = await this.prisma.groupMember.findUnique({
-      where: { groupId_userId: { groupId, userId } },
-      select: { id: true },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('Not a group member');
-    }
   }
 }
