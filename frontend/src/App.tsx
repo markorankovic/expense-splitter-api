@@ -1,21 +1,27 @@
 import { useEffect, useMemo, useState, type SubmitEvent } from 'react';
 import './App.css';
 import {
+  addGroupMember,
+  createExpense as createExpenseRequest,
+  createGroup as createGroupRequest,
+  fetchExpenses as fetchExpensesRequest,
+  fetchGroupBalances,
+  fetchGroupMembers,
+  fetchGroups as fetchGroupsRequest,
+  fetchGroupSettle,
+  fetchMe as fetchMeRequest,
+  login as loginRequest,
+  register as registerRequest,
+} from './api';
+import {
   type BalancesResponse,
   type Expense,
-  type ExpensesResponse,
   type Group,
-  type GroupDetailsResponse,
   type GroupMember,
-  type GroupsResponse,
-  type LoginResponse,
-  type MeResponse,
   type RegisterStatus,
   type SettleResponse,
 } from './types';
 import { formatMoney, gbpToPence } from './utils/money';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
 export default function App() {
   const [email, setEmail] = useState('');
@@ -64,15 +70,13 @@ export default function App() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetchMeRequest(token);
       if (!response.ok) {
         const message = await response.json().catch(() => null);
         console.error('Failed to load current user', message?.message ?? response.status);
         return;
       }
-      const data: MeResponse = await response.json();
+      const data = await response.json();
       setMeId(data.id);
       setMeEmail(data.email);
     } catch (err) {
@@ -90,16 +94,7 @@ export default function App() {
     setGroupsLoading(true);
     try {
       // TODO: Might need to implement frontend pagination if there are lots of groups, but for now just get the first 50.
-      const response = await fetch(`${API_BASE_URL}/groups?page=1&pageSize=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to load groups');
-      }
-
-      const data: GroupsResponse = await response.json();
+      const data = await fetchGroupsRequest(token, 1, 50);
       setGroups(data.items);
     } catch (err) {
       setGroupsError(err instanceof Error ? err.message : 'Failed to load groups');
@@ -115,14 +110,7 @@ export default function App() {
     setMembersError('');
     setMembersLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to load members');
-      }
-      const data: GroupDetailsResponse = await response.json();
+      const data = await fetchGroupMembers(token, groupId);
       setMembers(data.members);
     } catch (err) {
       setMembersError(err instanceof Error ? err.message : 'Failed to load members');
@@ -140,25 +128,10 @@ export default function App() {
     setBalancesError('');
     setBalancesLoading(true);
     try {
-      const [balancesResponse, settleResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/groups/${groupId}/balances`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE_URL}/groups/${groupId}/settle`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+      const [balancesData, settleData] = await Promise.all([
+        fetchGroupBalances(token, groupId),
+        fetchGroupSettle(token, groupId),
       ]);
-
-      if (!balancesResponse.ok || !settleResponse.ok) {
-        const failedResponse = !balancesResponse.ok
-          ? balancesResponse
-          : settleResponse;
-        const message = await failedResponse.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to load balances');
-      }
-
-      const balancesData: BalancesResponse = await balancesResponse.json();
-      const settleData: SettleResponse = await settleResponse.json();
       setBalances(balancesData);
       setSettle(settleData);
     } catch (err) {
@@ -179,19 +152,7 @@ export default function App() {
     setExpensesError('');
     setExpensesLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/groups/${groupId}/expenses?page=1&pageSize=50`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to load expenses');
-      }
-
-      const data: ExpensesResponse = await response.json();
+      const data = await fetchExpensesRequest(token, groupId, 1, 50);
       setExpenses(data.items);
     } catch (err) {
       setExpensesError(
@@ -245,18 +206,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Login failed');
-      }
-
-      const data: LoginResponse = await response.json();
+      const data = await loginRequest(email, password);
       localStorage.setItem('accessToken', data.accessToken);
       setLoggedIn(true);
       setEmail('');
@@ -281,17 +231,7 @@ export default function App() {
     setError('');
     setRegisterStatus(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Registration failed');
-      }
-
+      await registerRequest(email, password);
       setRegisterStatus({
         kind: 'success',
         message: 'Registered. You can now log in.',
@@ -311,20 +251,7 @@ export default function App() {
     }
     setGroupsError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/groups`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: groupName.trim() }),
-      });
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to create group');
-      }
-
+      await createGroupRequest(token, groupName.trim());
       setGroupName('');
       await fetchGroups();
     } catch (err) {
@@ -339,23 +266,7 @@ export default function App() {
     }
     setMemberStatus('');
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/groups/${activeGroupId}/members`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ email: memberEmail.trim() }),
-        },
-      );
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to add member');
-      }
-
+      await addGroupMember(token, activeGroupId, memberEmail.trim());
       setMemberEmail('');
       setMemberStatus('Member added.');
       // TODO: Can we not avoid having to re-fetch all the members after adding a new one?
@@ -384,28 +295,12 @@ export default function App() {
     }));
     setExpenseStatus('');
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/groups/${activeGroupId}/expenses`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            description: expenseDescription.trim(),
-            amount: pence,
-            paidByUserId: meId,
-            splits,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const message = await response.json().catch(() => null);
-        throw new Error(message?.message ?? 'Failed to add expense');
-      }
-
+      await createExpenseRequest(token, activeGroupId, {
+        description: expenseDescription.trim(),
+        amount: pence,
+        paidByUserId: meId,
+        splits,
+      });
       setExpenseDescription('');
       setExpenseAmount('');
       setExpenseStatus('Expense added.');
