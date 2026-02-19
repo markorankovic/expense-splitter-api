@@ -25,7 +25,8 @@ import { GroupsPanel } from './components/GroupsPanel';
 import { LoginRegisterForm } from './components/LoginRegisterForm';
 import { MembersPanel } from './components/MembersPanel';
 import { ExpensesPanel } from './components/ExpensesPanel';
-import { formatMoney, gbpToPence } from './utils/money';
+import { BalancesPanel } from './components/BalancesPanel';
+import { gbpToPence } from './utils/money';
 
 export default function App() {
   const [email, setEmail] = useState('');
@@ -391,60 +392,14 @@ export default function App() {
             ) : null}
 
             {activeGroupId ? (
-              <div className="balances-card">
-                <div className="balances-header">
-                  <h2 className="subtitle">Balances</h2>
-                  <button
-                    type="button"
-                    className="button ghost"
-                    onClick={() => fetchBalancesAndSettle(activeGroupId)}
-                    disabled={balancesLoading}
-                  >
-                    Refresh
-                  </button>
-                </div>
-                {balancesError ? <p className="error">{balancesError}</p> : null}
-                {balances ? (
-                  <ul className="balances-list">
-                    {balances.balances.filter((entry) => entry.balance !== 0).length ===
-                    0 ? (
-                      <li className="muted">No balances yet.</li>
-                    ) : (
-                      balances.balances
-                        .filter((entry) => entry.balance !== 0)
-                        .map((entry) => (
-                          <li key={entry.userId}>
-                            <span>{formatMemberLabel(entry.userId)}</span>
-                            <span>{formatMoney(entry.balance)}</span>
-                          </li>
-                        ))
-                    )}
-                  </ul>
-                ) : (
-                  <p className="muted">No balances yet.</p>
-                )}
-
-                <h2 className="subtitle">Settle</h2>
-                {settle ? (
-                  <ul className="balances-list">
-                    {settle.transfers.length === 0 ? (
-                      <li className="muted">No transfers needed.</li>
-                    ) : (
-                      settle.transfers.map((transfer, index) => (
-                        <li key={`${transfer.fromUserId}-${transfer.toUserId}-${index}`}>
-                          <span>
-                            {formatMemberLabel(transfer.fromUserId)} →{' '}
-                            {formatMemberLabel(transfer.toUserId)}
-                          </span>
-                          <span>{formatMoney(transfer.amount)}</span>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                ) : (
-                  <p className="muted">No settlements yet.</p>
-                )}
-              </div>
+              <BalancesPanel
+                balancesLoading={balancesLoading}
+                balancesError={balancesError}
+                balances={balances}
+                settle={settle}
+                onRefresh={() => fetchBalancesAndSettle(activeGroupId)}
+                formatMemberLabel={formatMemberLabel}
+              />
             ) : null}
 
             <div className="logout-card">
