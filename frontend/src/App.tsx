@@ -23,6 +23,7 @@ import {
 } from './types';
 import { GroupsPanel } from './components/GroupsPanel';
 import { LoginRegisterForm } from './components/LoginRegisterForm';
+import { MembersPanel } from './components/MembersPanel';
 import { formatMoney, gbpToPence } from './utils/money';
 
 export default function App() {
@@ -360,46 +361,15 @@ export default function App() {
             />
 
             {activeGroupId ? (
-              <div className="members-card">
-                <h2 className="subtitle">Members</h2>
-                <form onSubmit={handleAddMember} className="form inline">
-                  <label className="label">
-                    Email
-                    <input
-                      className="input"
-                      type="email"
-                      value={memberEmail}
-                      onChange={(event) => setMemberEmail(event.target.value)}
-                      placeholder="person@example.com"
-                      required
-                    />
-                  </label>
-                  <button className="button" type="submit" disabled={!memberEmail.trim()}>
-                    Add
-                  </button>
-                </form>
-                {membersError ? <p className="error">{membersError}</p> : null}
-                {memberStatus ? (
-                  <p className={memberStatus === 'Member added.' ? 'success' : 'error'}>
-                    {memberStatus}
-                  </p>
-                ) : null}
-                <div className="members-list">
-                  {membersLoading ? (
-                    <p className="muted">Loading members...</p>
-                  ) : members.length === 0 ? (
-                    <p className="muted">No members yet.</p>
-                  ) : (
-                    <ul>
-                      {members.map((member) => (
-                        <li key={member.id}>
-                          <span className="member-email">{member.email}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
+              <MembersPanel
+                memberEmail={memberEmail}
+                memberStatus={memberStatus}
+                membersError={membersError}
+                membersLoading={membersLoading}
+                members={members}
+                onMemberEmailChange={setMemberEmail}
+                onAddMember={handleAddMember}
+              />
             ) : null}
 
             {activeGroupId ? (
