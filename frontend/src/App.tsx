@@ -21,6 +21,7 @@ import {
   type RegisterStatus,
   type SettleResponse,
 } from './types';
+import { GroupsPanel } from './components/GroupsPanel';
 import { LoginRegisterForm } from './components/LoginRegisterForm';
 import { formatMoney, gbpToPence } from './utils/money';
 
@@ -347,47 +348,16 @@ export default function App() {
               Logged in{meEmail ? ` as ${meEmail}` : ''}
             </p>
 
-            <div className="groups">
-              <h2 className="subtitle">Groups</h2>
-              <form onSubmit={handleCreateGroup} className="form inline">
-                <label className="label">
-                  New group
-                  <input
-                    className="input"
-                    type="text"
-                    value={groupName}
-                    onChange={(event) => setGroupName(event.target.value)}
-                    placeholder="Weekend trip"
-                    required
-                  />
-                </label>
-                <button className="button" type="submit" disabled={!groupName.trim()}>
-                  Create
-                </button>
-              </form>
-
-              {groupsError ? <p className="error">{groupsError}</p> : null}
-              {groupsLoading ? <span className="muted">Loading...</span> : null}
-              {groups.length === 0 && !groupsLoading ? (
-                <p className="muted">No groups yet.</p>
-              ) : (
-                <ul className="groups-list">
-                  {groups.map((group) => (
-                    <li key={group.id}>
-                      <button
-                        type="button"
-                        className={`group-button${
-                          activeGroupId === group.id ? ' active' : ''
-                        }`}
-                        onClick={() => setActiveGroupId(group.id)}
-                      >
-                        {group.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <GroupsPanel
+              groups={groups}
+              groupsLoading={groupsLoading}
+              groupsError={groupsError}
+              groupName={groupName}
+              activeGroupId={activeGroupId}
+              onGroupNameChange={setGroupName}
+              onCreateGroup={handleCreateGroup}
+              onSelectGroup={setActiveGroupId}
+            />
 
             {activeGroupId ? (
               <div className="members-card">
