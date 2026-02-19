@@ -21,11 +21,8 @@ import {
   type RegisterStatus,
   type SettleResponse,
 } from './types';
-import { GroupsPanel } from './components/GroupsPanel';
 import { LoginRegisterForm } from './components/LoginRegisterForm';
-import { MembersPanel } from './components/MembersPanel';
-import { ExpensesPanel } from './components/ExpensesPanel';
-import { BalancesPanel } from './components/BalancesPanel';
+import { LoggedInView } from './components/LoggedInView';
 import { gbpToPence } from './utils/money';
 
 export default function App() {
@@ -346,68 +343,44 @@ export default function App() {
         <h1 className="title">Expense Splitter</h1>
 
         {loggedIn ? (
-          <div className="logged-in">
-            <p className="success">
-              Logged in{meEmail ? ` as ${meEmail}` : ''}
-            </p>
-
-            <GroupsPanel
-              groups={groups}
-              groupsLoading={groupsLoading}
-              groupsError={groupsError}
-              groupName={groupName}
-              activeGroupId={activeGroupId}
-              onGroupNameChange={setGroupName}
-              onCreateGroup={handleCreateGroup}
-              onSelectGroup={setActiveGroupId}
-            />
-
-            {activeGroupId ? (
-              <MembersPanel
-                memberEmail={memberEmail}
-                memberStatus={memberStatus}
-                membersError={membersError}
-                membersLoading={membersLoading}
-                members={members}
-                onMemberEmailChange={setMemberEmail}
-                onAddMember={handleAddMember}
-              />
-            ) : null}
-
-            {activeGroupId ? (
-              <ExpensesPanel
-                expenseDescription={expenseDescription}
-                expenseAmount={expenseAmount}
-                expenseStatus={expenseStatus}
-                expensesError={expensesError}
-                expensesLoading={expensesLoading}
-                expenses={expenses}
-                membersLoading={membersLoading}
-                members={members}
-                onExpenseDescriptionChange={setExpenseDescription}
-                onExpenseAmountChange={setExpenseAmount}
-                onCreateExpense={handleCreateExpense}
-                formatMemberLabel={formatMemberLabel}
-              />
-            ) : null}
-
-            {activeGroupId ? (
-              <BalancesPanel
-                balancesLoading={balancesLoading}
-                balancesError={balancesError}
-                balances={balances}
-                settle={settle}
-                onRefresh={() => fetchBalancesAndSettle(activeGroupId)}
-                formatMemberLabel={formatMemberLabel}
-              />
-            ) : null}
-
-            <div className="logout-card">
-              <button type="button" onClick={handleLogout} className="button ghost">
-                Log out
-              </button>
-            </div>
-          </div>
+          <LoggedInView
+            meEmail={meEmail}
+            groups={groups}
+            groupsLoading={groupsLoading}
+            groupsError={groupsError}
+            groupName={groupName}
+            activeGroupId={activeGroupId}
+            onGroupNameChange={setGroupName}
+            onCreateGroup={handleCreateGroup}
+            onSelectGroup={setActiveGroupId}
+            memberEmail={memberEmail}
+            memberStatus={memberStatus}
+            membersError={membersError}
+            membersLoading={membersLoading}
+            members={members}
+            onMemberEmailChange={setMemberEmail}
+            onAddMember={handleAddMember}
+            expenseDescription={expenseDescription}
+            expenseAmount={expenseAmount}
+            expenseStatus={expenseStatus}
+            expensesError={expensesError}
+            expensesLoading={expensesLoading}
+            expenses={expenses}
+            onExpenseDescriptionChange={setExpenseDescription}
+            onExpenseAmountChange={setExpenseAmount}
+            onCreateExpense={handleCreateExpense}
+            balancesLoading={balancesLoading}
+            balancesError={balancesError}
+            balances={balances}
+            settle={settle}
+            onRefreshBalances={
+              activeGroupId
+                ? () => fetchBalancesAndSettle(activeGroupId)
+                : () => undefined
+            }
+            formatMemberLabel={formatMemberLabel}
+            onLogout={handleLogout}
+          />
         ) : (
           <LoginRegisterForm
             email={email}
