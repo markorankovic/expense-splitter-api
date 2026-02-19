@@ -1,89 +1,19 @@
 import { useEffect, useMemo, useState, type SubmitEvent } from 'react';
 import './App.css';
-
-type LoginResponse = {
-  accessToken: string;
-};
-
-type Group = {
-  id: string;
-  name: string;
-  createdAt: string;
-  ownerId: string;
-};
-
-type GroupsResponse = {
-  items: Group[];
-  page: number;
-  pageSize: number;
-  total: number;
-};
-
-type MeResponse = {
-  id: string;
-  email: string;
-};
-
-type GroupMember = {
-  id: string;
-  email: string;
-};
-
-type GroupDetailsResponse = Group & {
-  members: GroupMember[];
-};
-
-type BalancesResponse = {
-  groupId: string;
-  balances: { userId: string; balance: number }[];
-};
-
-type SettleResponse = {
-  groupId: string;
-  transfers: { fromUserId: string; toUserId: string; amount: number }[];
-};
-
-type Expense = {
-  id: string;
-  description: string;
-  amount: number;
-  paidByUserId: string;
-  createdAt: string;
-};
-
-type ExpensesResponse = {
-  items: Expense[];
-  page: number;
-  pageSize: number;
-  total: number;
-};
-
-type RegisterStatus = {
-  kind: 'success' | 'error';
-  message: string;
-};
-
-const gbpToPence = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
-    return null;
-  }
-  const [whole, fraction = ''] = trimmed.split('.');
-  const normalizedFraction = fraction.padEnd(2, '0');
-  const pence = Number(whole) * 100 + Number(normalizedFraction);
-  return Number.isFinite(pence) && pence > 0 ? pence : null;
-};
-
-const formatMoney = (pence: number) => {
-  const sign = pence < 0 ? '-' : '';
-  const abs = Math.abs(pence);
-  const pounds = Math.floor(abs / 100);
-  const pennies = String(abs % 100).padStart(2, '0');
-  return `${sign}£${pounds}.${pennies}`;
-};
+import {
+  type BalancesResponse,
+  type Expense,
+  type ExpensesResponse,
+  type Group,
+  type GroupDetailsResponse,
+  type GroupMember,
+  type GroupsResponse,
+  type LoginResponse,
+  type MeResponse,
+  type RegisterStatus,
+  type SettleResponse,
+} from './types';
+import { formatMoney, gbpToPence } from './utils/money';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
