@@ -24,6 +24,7 @@ import {
 import { GroupsPanel } from './components/GroupsPanel';
 import { LoginRegisterForm } from './components/LoginRegisterForm';
 import { MembersPanel } from './components/MembersPanel';
+import { ExpensesPanel } from './components/ExpensesPanel';
 import { formatMoney, gbpToPence } from './utils/money';
 
 export default function App() {
@@ -373,65 +374,20 @@ export default function App() {
             ) : null}
 
             {activeGroupId ? (
-              <div className="expense-card">
-                <h2 className="subtitle">Expenses</h2>
-                <form onSubmit={handleCreateExpense} className="form">
-                  <label className="label">
-                    Description
-                    <input
-                      className="input"
-                      type="text"
-                      value={expenseDescription}
-                      onChange={(event) => setExpenseDescription(event.target.value)}
-                      placeholder="Dinner"
-                      required
-                    />
-                  </label>
-                  <label className="label">
-                    Amount (£)
-                    <input
-                      className="input"
-                      type="text"
-                      value={expenseAmount}
-                      onChange={(event) => setExpenseAmount(event.target.value)}
-                      placeholder="12.34"
-                      required
-                    />
-                  </label>
-                  {expenseStatus ? (
-                    <p className={expenseStatus === 'Expense added.' ? 'success' : 'error'}>
-                      {expenseStatus}
-                    </p>
-                  ) : null}
-                  <button
-                    className="button"
-                    type="submit"
-                    disabled={membersLoading || members.length === 0}
-                  >
-                    Add expense
-                  </button>
-                </form>
-                {expensesError ? <p className="error">{expensesError}</p> : null}
-                {expensesLoading ? (
-                  <p className="muted">Loading expenses...</p>
-                ) : expenses.length === 0 ? (
-                  <p className="muted">No expenses yet.</p>
-                ) : (
-                  <ul className="expenses-list">
-                    {expenses.map((expense) => (
-                      <li key={expense.id}>
-                        <div>
-                          <p className="expense-name">{expense.description}</p>
-                          <p className="muted">
-                            Paid by {formatMemberLabel(expense.paidByUserId)}
-                          </p>
-                        </div>
-                        <span>{formatMoney(expense.amount)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <ExpensesPanel
+                expenseDescription={expenseDescription}
+                expenseAmount={expenseAmount}
+                expenseStatus={expenseStatus}
+                expensesError={expensesError}
+                expensesLoading={expensesLoading}
+                expenses={expenses}
+                membersLoading={membersLoading}
+                members={members}
+                onExpenseDescriptionChange={setExpenseDescription}
+                onExpenseAmountChange={setExpenseAmount}
+                onCreateExpense={handleCreateExpense}
+                formatMemberLabel={formatMemberLabel}
+              />
             ) : null}
 
             {activeGroupId ? (
