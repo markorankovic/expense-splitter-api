@@ -1,47 +1,54 @@
-import type { SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import type { Expense, GroupMember } from '../types';
 import { formatMoney } from '../utils/money';
 
 type ExpensesPanelProps = {
-  expenseDescription: string;
-  expenseAmount: string;
   expenseStatus: string;
   expensesError: string;
   expensesLoading: boolean;
   expenses: Expense[];
   membersLoading: boolean;
   members: GroupMember[];
-  onExpenseDescriptionChange: (value: string) => void;
-  onExpenseAmountChange: (value: string) => void;
-  onCreateExpense: (event: SubmitEvent<HTMLFormElement>) => void;
+  onCreateExpense: (
+    description: string,
+    amountInput: string,
+  ) => Promise<boolean> | boolean;
   formatMemberLabel: (memberId: string) => string;
 };
 
 export function ExpensesPanel({
-  expenseDescription,
-  expenseAmount,
   expenseStatus,
   expensesError,
   expensesLoading,
   expenses,
   membersLoading,
   members,
-  onExpenseDescriptionChange,
-  onExpenseAmountChange,
   onCreateExpense,
   formatMemberLabel,
 }: ExpensesPanelProps) {
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const ok = await onCreateExpense(expenseDescription, expenseAmount);
+    if (ok) {
+      setExpenseDescription('');
+      setExpenseAmount('');
+    }
+  };
+
   return (
     <div className="expense-card">
       <h2 className="subtitle">Expenses</h2>
-      <form onSubmit={onCreateExpense} className="form">
+      <form onSubmit={handleSubmit} className="form">
         <label className="label">
           Description
           <input
             className="input"
             type="text"
             value={expenseDescription}
-            onChange={(event) => onExpenseDescriptionChange(event.target.value)}
+            onChange={(event) => setExpenseDescription(event.target.value)}
             placeholder="Dinner"
             required
           />
@@ -52,7 +59,7 @@ export function ExpensesPanel({
             className="input"
             type="text"
             value={expenseAmount}
-            onChange={(event) => onExpenseAmountChange(event.target.value)}
+            onChange={(event) => setExpenseAmount(event.target.value)}
             placeholder="12.34"
             required
           />

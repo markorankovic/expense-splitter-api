@@ -1,38 +1,42 @@
-import type { SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import type { RegisterStatus } from '../types';
 
 type LoginRegisterFormProps = {
-  email: string;
-  password: string;
   loading: boolean;
   error: string;
   registerStatus: RegisterStatus | null;
-  onEmailChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onLogin: (event: SubmitEvent<HTMLFormElement>) => void;
-  onRegister: () => void;
+  onLogin: (email: string, password: string) => Promise<void> | void;
+  onRegister: (email: string, password: string) => Promise<void> | void;
 };
 
 export function LoginRegisterForm({
-  email,
-  password,
   loading,
   error,
   registerStatus,
-  onEmailChange,
-  onPasswordChange,
   onLogin,
   onRegister,
 }: LoginRegisterFormProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void onLogin(email, password);
+  };
+
+  const handleRegister = () => {
+    void onRegister(email, password);
+  };
+
   return (
-    <form onSubmit={onLogin} className="form">
+    <form onSubmit={handleSubmit} className="form">
       <label className="label">
         Email
         <input
           className="input"
           type="email"
           value={email}
-          onChange={(event) => onEmailChange(event.target.value)}
+          onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
           required
         />
@@ -44,7 +48,7 @@ export function LoginRegisterForm({
           className="input"
           type="password"
           value={password}
-          onChange={(event) => onPasswordChange(event.target.value)}
+          onChange={(event) => setPassword(event.target.value)}
           placeholder="••••••••"
           required
           minLength={8}
@@ -64,7 +68,7 @@ export function LoginRegisterForm({
       <button
         className="button ghost"
         type="button"
-        onClick={onRegister}
+        onClick={handleRegister}
         disabled={loading}
       >
         Register

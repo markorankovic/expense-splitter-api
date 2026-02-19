@@ -1,14 +1,12 @@
-import type { SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import type { Group } from '../types';
 
 type GroupsPanelProps = {
   groups: Group[];
   groupsLoading: boolean;
   groupsError: string;
-  groupName: string;
   activeGroupId: string | null;
-  onGroupNameChange: (value: string) => void;
-  onCreateGroup: (event: SubmitEvent<HTMLFormElement>) => void;
+  onCreateGroup: (name: string) => Promise<boolean> | boolean;
   onSelectGroup: (groupId: string) => void;
 };
 
@@ -16,23 +14,34 @@ export function GroupsPanel({
   groups,
   groupsLoading,
   groupsError,
-  groupName,
   activeGroupId,
-  onGroupNameChange,
   onCreateGroup,
   onSelectGroup,
 }: GroupsPanelProps) {
+  const [groupName, setGroupName] = useState('');
+
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!groupName.trim()) {
+      return;
+    }
+    const ok = await onCreateGroup(groupName.trim());
+    if (ok) {
+      setGroupName('');
+    }
+  };
+
   return (
     <div className="groups">
       <h2 className="subtitle">Groups</h2>
-      <form onSubmit={onCreateGroup} className="form inline">
+      <form onSubmit={handleSubmit} className="form inline">
         <label className="label">
           New group
           <input
             className="input"
             type="text"
             value={groupName}
-            onChange={(event) => onGroupNameChange(event.target.value)}
+            onChange={(event) => setGroupName(event.target.value)}
             placeholder="Weekend trip"
             required
           />

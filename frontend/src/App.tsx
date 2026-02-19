@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type SubmitEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import {
   addGroupMember,
@@ -26,36 +26,19 @@ import { LoggedInView } from './components/LoggedInView';
 import { gbpToPence } from './utils/money';
 
 export default function App() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [loggedIn, setLoggedIn] = useState(
     () => Boolean(localStorage.getItem('accessToken')),
   );
   const [groups, setGroups] = useState<Group[]>([]);
-  const [groupsLoading, setGroupsLoading] = useState(false);
-  const [groupsError, setGroupsError] = useState('');
-  const [groupName, setGroupName] = useState('');
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
   const [meEmail, setMeEmail] = useState<string | null>(null);
-  const [expenseDescription, setExpenseDescription] = useState('');
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [expenseStatus, setExpenseStatus] = useState('');
   const [registerStatus, setRegisterStatus] = useState<RegisterStatus | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [membersLoading, setMembersLoading] = useState(false);
-  const [membersError, setMembersError] = useState('');
-  const [memberEmail, setMemberEmail] = useState('');
-  const [memberStatus, setMemberStatus] = useState('');
   const [balances, setBalances] = useState<BalancesResponse | null>(null);
   const [settle, setSettle] = useState<SettleResponse | null>(null);
-  const [balancesLoading, setBalancesLoading] = useState(false);
-  const [balancesError, setBalancesError] = useState('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expensesLoading, setExpensesLoading] = useState(false);
-  const [expensesError, setExpensesError] = useState('');
   const memberEmailById = useMemo(
     () => new Map(members.map((member) => [member.id, member.email])),
     [members],
@@ -90,89 +73,47 @@ export default function App() {
 
   const fetchGroups = async () => {
     if (!token) {
-      return;
+      throw new Error('Not authenticated');
     }
-    setGroupsError('');
-    setGroupsLoading(true);
-    try {
-      // TODO: Might need to implement frontend pagination if there are lots of groups, but for now just get the first 50.
-      const data = await fetchGroupsRequest(token, 1, 50);
-      setGroups(data.items);
-    } catch (err) {
-      setGroupsError(err instanceof Error ? err.message : 'Failed to load groups');
-    } finally {
-      setGroupsLoading(false);
-    }
+    // TODO: Might need to implement frontend pagination if there are lots of groups, but for now just get the first 50.
+    const data = await fetchGroupsRequest(token, 1, 50);
+    setGroups(data.items);
   };
 
   const fetchMembers = async (groupId: string) => {
     if (!token) {
-      return;
+      throw new Error('Not authenticated');
     }
-    setMembersError('');
-    setMembersLoading(true);
-    try {
-      const data = await fetchGroupMembers(token, groupId);
-      setMembers(data.members);
-    } catch (err) {
-      setMembersError(err instanceof Error ? err.message : 'Failed to load members');
-      setMembers([]);
-    } finally {
-      setMembersLoading(false);
-    }
+    const data = await fetchGroupMembers(token, groupId);
+    setMembers(data.members);
   };
 
   // TODO: Maybe this should only fetch the settle and the settle data has the balances data in it as well to avoid needing to make two separate requests and keep them in sync?
   const fetchBalancesAndSettle = async (groupId: string) => {
     if (!token) {
-      return;
+      throw new Error('Not authenticated');
     }
-    setBalancesError('');
-    setBalancesLoading(true);
-    try {
-      const [balancesData, settleData] = await Promise.all([
-        fetchGroupBalances(token, groupId),
-        fetchGroupSettle(token, groupId),
-      ]);
-      setBalances(balancesData);
-      setSettle(settleData);
-    } catch (err) {
-      setBalancesError(
-        err instanceof Error ? err.message : 'Failed to load balances',
-      );
-      setBalances(null);
-      setSettle(null);
-    } finally {
-      setBalancesLoading(false);
-    }
+    const [balancesData, settleData] = await Promise.all([
+      fetchGroupBalances(token, groupId),
+      fetchGroupSettle(token, groupId),
+    ]);
+    setBalances(balancesData);
+    setSettle(settleData);
   };
 
   const fetchExpenses = async (groupId: string) => {
     if (!token) {
-      return;
+      throw new Error('Not authenticated');
     }
-    setExpensesError('');
-    setExpensesLoading(true);
-    try {
-      const data = await fetchExpensesRequest(token, groupId, 1, 50);
-      setExpenses(data.items);
-    } catch (err) {
-      setExpensesError(
-        err instanceof Error ? err.message : 'Failed to load expenses',
-      );
-      setExpenses([]);
-    } finally {
-      setExpensesLoading(false);
-    }
+    const data = await fetchExpensesRequest(token, groupId, 1, 50);
+    setExpenses(data.items);
   };
 
   useEffect(() => {
     if (loggedIn) {
       fetchMe();
-      fetchGroups();
     } else {
       setGroups([]);
-      setActiveGroupId(null);
       setMeId(null);
       setMeEmail(null);
       setMembers([]);
@@ -182,27 +123,7 @@ export default function App() {
     }
   }, [loggedIn]);
 
-  useEffect(() => {
-    if (activeGroupId) {
-      fetchMembers(activeGroupId);
-      fetchBalancesAndSettle(activeGroupId);
-      fetchExpenses(activeGroupId);
-    } else {
-      setMembers([]);
-      setBalances(null);
-      setSettle(null);
-      setExpenses([]);
-    }
-  }, [activeGroupId]);
-
-  useEffect(() => {
-    if (!activeGroupId && groups.length > 0) {
-      setActiveGroupId(groups[0].id);
-    }
-  }, [activeGroupId, groups]);
-
-  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleLogin = async (email: string, password: string) => {
     setError('');
     setRegisterStatus(null);
     setLoading(true);
@@ -211,9 +132,6 @@ export default function App() {
       const data = await loginRequest(email, password);
       localStorage.setItem('accessToken', data.accessToken);
       setLoggedIn(true);
-      setEmail('');
-      setPassword('');
-      setExpenseStatus('');
       setRegisterStatus(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -222,7 +140,7 @@ export default function App() {
     }
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (email: string, password: string) => {
     if (!email || !password) {
       setRegisterStatus({
         kind: 'error',
@@ -246,95 +164,56 @@ export default function App() {
     }
   };
 
-  const handleCreateGroup = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!token || !groupName.trim()) {
-      return;
+  const handleCreateGroup = async (groupName: string) => {
+    if (!token || !groupName) {
+      throw new Error('Invalid group name');
     }
-    setGroupsError('');
-    try {
-      await createGroupRequest(token, groupName.trim());
-      setGroupName('');
-      await fetchGroups();
-    } catch (err) {
-      setGroupsError(err instanceof Error ? err.message : 'Failed to create group');
-    }
+    await createGroupRequest(token, groupName);
   };
 
-  const handleAddMember = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!token || !activeGroupId || !memberEmail.trim()) {
-      return;
+  const handleAddMember = async (groupId: string, memberEmail: string) => {
+    if (!token || !groupId || !memberEmail) {
+      throw new Error('Invalid member email');
     }
-    setMemberStatus('');
-    try {
-      await addGroupMember(token, activeGroupId, memberEmail.trim());
-      setMemberEmail('');
-      setMemberStatus('Member added.');
-      // TODO: Can we not avoid having to re-fetch all the members after adding a new one?
-      await fetchMembers(activeGroupId);
-      await fetchBalancesAndSettle(activeGroupId);
-    } catch (err) {
-      setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
-    }
+    await addGroupMember(token, groupId, memberEmail);
   };
 
-  const handleCreateExpense = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!token || !activeGroupId || !meId || members.length === 0) {
-      return;
+  const handleCreateExpense = async (
+    groupId: string,
+    expenseDescription: string,
+    expenseAmount: string,
+    paidByUserId: string,
+    groupMembers: GroupMember[],
+  ) => {
+    if (!token || !groupId || !paidByUserId || groupMembers.length === 0) {
+      throw new Error('Missing expense data');
     }
     const pence = gbpToPence(expenseAmount);
     if (!pence) {
-      setExpenseStatus('Enter a valid amount (e.g. 12.34).');
-      return;
+      throw new Error('Enter a valid amount (e.g. 12.34).');
     }
-    const base = Math.floor(pence / members.length);
-    const remainder = pence % members.length;
-    const splits = members.map((member, index) => ({
+    const base = Math.floor(pence / groupMembers.length);
+    const remainder = pence % groupMembers.length;
+    const splits = groupMembers.map((member, index) => ({
       userId: member.id,
       amount: index < remainder ? base + 1 : base,
     }));
-    setExpenseStatus('');
-    try {
-      await createExpenseRequest(token, activeGroupId, {
-        description: expenseDescription.trim(),
-        amount: pence,
-        paidByUserId: meId,
-        splits,
-      });
-      setExpenseDescription('');
-      setExpenseAmount('');
-      setExpenseStatus('Expense added.');
-      await fetchExpenses(activeGroupId);
-      await fetchBalancesAndSettle(activeGroupId);
-    } catch (err) {
-      setExpenseStatus(
-        err instanceof Error ? err.message : 'Failed to add expense',
-      );
-    }
+    await createExpenseRequest(token, groupId, {
+      description: expenseDescription.trim(),
+      amount: pence,
+      paidByUserId,
+      splits,
+    });
   };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     setLoggedIn(false);
-    setEmail('');
-    setPassword('');
-    setGroupName('');
-    setGroupsError('');
-    setExpenseDescription('');
-    setExpenseAmount('');
-    setExpenseStatus('');
     setMembers([]);
-    setMembersError('');
-    setMemberEmail('');
-    setMemberStatus('');
     setBalances(null);
     setSettle(null);
-    setBalancesError('');
     setMeEmail(null);
     setExpenses([]);
-    setExpensesError('');
   };
 
   return (
@@ -344,53 +223,29 @@ export default function App() {
 
         {loggedIn ? (
           <LoggedInView
+            meId={meId}
             meEmail={meEmail}
             groups={groups}
-            groupsLoading={groupsLoading}
-            groupsError={groupsError}
-            groupName={groupName}
-            activeGroupId={activeGroupId}
-            onGroupNameChange={setGroupName}
-            onCreateGroup={handleCreateGroup}
-            onSelectGroup={setActiveGroupId}
-            memberEmail={memberEmail}
-            memberStatus={memberStatus}
-            membersError={membersError}
-            membersLoading={membersLoading}
             members={members}
-            onMemberEmailChange={setMemberEmail}
-            onAddMember={handleAddMember}
-            expenseDescription={expenseDescription}
-            expenseAmount={expenseAmount}
-            expenseStatus={expenseStatus}
-            expensesError={expensesError}
-            expensesLoading={expensesLoading}
             expenses={expenses}
-            onExpenseDescriptionChange={setExpenseDescription}
-            onExpenseAmountChange={setExpenseAmount}
-            onCreateExpense={handleCreateExpense}
-            balancesLoading={balancesLoading}
-            balancesError={balancesError}
             balances={balances}
             settle={settle}
-            onRefreshBalances={
-              activeGroupId
-                ? () => fetchBalancesAndSettle(activeGroupId)
-                : () => undefined
-            }
+            onLoadGroups={fetchGroups}
+            onLoadMembers={fetchMembers}
+            onLoadExpenses={fetchExpenses}
+            onLoadBalancesAndSettle={fetchBalancesAndSettle}
+            onCreateGroup={handleCreateGroup}
+            onAddMember={handleAddMember}
+            onCreateExpense={handleCreateExpense}
             formatMemberLabel={formatMemberLabel}
             onLogout={handleLogout}
           />
         ) : (
           <LoginRegisterForm
-            email={email}
-            password={password}
             loading={loading}
             error={error}
             registerStatus={registerStatus}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-            onLogin={handleSubmit}
+            onLogin={handleLogin}
             onRegister={handleRegister}
           />
         )}

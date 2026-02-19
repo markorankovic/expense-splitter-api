@@ -1,4 +1,4 @@
-import type { SubmitEvent } from 'react';
+import { useEffect, useState } from 'react';
 import type {
   BalancesResponse,
   Expense,
@@ -12,74 +12,171 @@ import { GroupsPanel } from './GroupsPanel';
 import { MembersPanel } from './MembersPanel';
 
 type LoggedInViewProps = {
+  meId: string | null;
   meEmail: string | null;
   groups: Group[];
-  groupsLoading: boolean;
-  groupsError: string;
-  groupName: string;
-  activeGroupId: string | null;
-  onGroupNameChange: (value: string) => void;
-  onCreateGroup: (event: SubmitEvent<HTMLFormElement>) => void;
-  onSelectGroup: (groupId: string) => void;
-  memberEmail: string;
-  memberStatus: string;
-  membersError: string;
-  membersLoading: boolean;
   members: GroupMember[];
-  onMemberEmailChange: (value: string) => void;
-  onAddMember: (event: SubmitEvent<HTMLFormElement>) => void;
-  expenseDescription: string;
-  expenseAmount: string;
-  expenseStatus: string;
-  expensesError: string;
-  expensesLoading: boolean;
   expenses: Expense[];
-  onExpenseDescriptionChange: (value: string) => void;
-  onExpenseAmountChange: (value: string) => void;
-  onCreateExpense: (event: SubmitEvent<HTMLFormElement>) => void;
-  balancesLoading: boolean;
-  balancesError: string;
   balances: BalancesResponse | null;
   settle: SettleResponse | null;
-  onRefreshBalances: () => void;
+  onLoadGroups: () => Promise<void>;
+  onLoadMembers: (groupId: string) => Promise<void>;
+  onLoadExpenses: (groupId: string) => Promise<void>;
+  onLoadBalancesAndSettle: (groupId: string) => Promise<void>;
+  onCreateGroup: (name: string) => Promise<void>;
+  onAddMember: (groupId: string, email: string) => Promise<void>;
+  onCreateExpense: (
+    groupId: string,
+    description: string,
+    amountInput: string,
+    meId: string,
+    members: GroupMember[],
+  ) => Promise<void>;
   formatMemberLabel: (memberId: string) => string;
   onLogout: () => void;
 };
 
 export function LoggedInView({
+  meId,
   meEmail,
   groups,
-  groupsLoading,
-  groupsError,
-  groupName,
-  activeGroupId,
-  onGroupNameChange,
-  onCreateGroup,
-  onSelectGroup,
-  memberEmail,
-  memberStatus,
-  membersError,
-  membersLoading,
   members,
-  onMemberEmailChange,
-  onAddMember,
-  expenseDescription,
-  expenseAmount,
-  expenseStatus,
-  expensesError,
-  expensesLoading,
   expenses,
-  onExpenseDescriptionChange,
-  onExpenseAmountChange,
-  onCreateExpense,
-  balancesLoading,
-  balancesError,
   balances,
   settle,
-  onRefreshBalances,
+  onLoadGroups,
+  onLoadMembers,
+  onLoadExpenses,
+  onLoadBalancesAndSettle,
+  onCreateGroup,
+  onAddMember,
+  onCreateExpense,
   formatMemberLabel,
   onLogout,
 }: LoggedInViewProps) {
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState('');
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState('');
+  const [memberStatus, setMemberStatus] = useState('');
+  const [expensesLoading, setExpensesLoading] = useState(false);
+  const [expensesError, setExpensesError] = useState('');
+  const [expenseStatus, setExpenseStatus] = useState('');
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  const [balancesError, setBalancesError] = useState('');
+
+  const loadGroups = async () => {
+    setGroupsError('');
+    setGroupsLoading(true);
+    try {
+      await onLoadGroups();
+    } catch (err) {
+      setGroupsError(err instanceof Error ? err.message : 'Failed to load groups');
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  const loadMembers = async (groupId: string) => {
+    setMembersError('');
+    setMembersLoading(true);
+    try {
+      await onLoadMembers(groupId);
+    } catch (err) {
+      setMembersError(err instanceof Error ? err.message : 'Failed to load members');
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const loadExpenses = async (groupId: string) => {
+    setExpensesError('');
+    setExpensesLoading(true);
+    try {
+      await onLoadExpenses(groupId);
+    } catch (err) {
+      setExpensesError(err instanceof Error ? err.message : 'Failed to load expenses');
+    } finally {
+      setExpensesLoading(false);
+    }
+  };
+
+  const loadBalancesAndSettle = async (groupId: string) => {
+    setBalancesError('');
+    setBalancesLoading(true);
+    try {
+      await onLoadBalancesAndSettle(groupId);
+    } catch (err) {
+      setBalancesError(err instanceof Error ? err.message : 'Failed to load balances');
+    } finally {
+      setBalancesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadGroups();
+  }, []);
+
+  useEffect(() => {
+    if (!activeGroupId && groups.length > 0) {
+      setActiveGroupId(groups[0].id);
+    }
+  }, [activeGroupId, groups]);
+
+  useEffect(() => {
+    if (!activeGroupId) {
+      return;
+    }
+    void loadMembers(activeGroupId);
+    void loadExpenses(activeGroupId);
+    void loadBalancesAndSettle(activeGroupId);
+  }, [activeGroupId]);
+
+  const handleCreateGroup = async (name: string) => {
+    try {
+      await onCreateGroup(name);
+      await loadGroups();
+      return true;
+    } catch (err) {
+      setGroupsError(err instanceof Error ? err.message : 'Failed to create group');
+      return false;
+    }
+  };
+
+  const handleAddMember = async (email: string) => {
+    if (!activeGroupId) {
+      return false;
+    }
+    setMemberStatus('');
+    try {
+      await onAddMember(activeGroupId, email);
+      setMemberStatus('Member added.');
+      await loadMembers(activeGroupId);
+      await loadBalancesAndSettle(activeGroupId);
+      return true;
+    } catch (err) {
+      setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
+      return false;
+    }
+  };
+
+  const handleCreateExpense = async (description: string, amountInput: string) => {
+    if (!activeGroupId || !meId) {
+      return false;
+    }
+    try {
+      await onCreateExpense(activeGroupId, description, amountInput, meId, members);
+      setExpenseStatus('Expense added.');
+      await loadExpenses(activeGroupId);
+      await loadBalancesAndSettle(activeGroupId);
+      return true;
+    } catch (err) {
+      setExpenseStatus(err instanceof Error ? err.message : 'Failed to add expense');
+      return false;
+    }
+  };
+
   return (
     <div className="logged-in">
       <p className="success">Logged in{meEmail ? ` as ${meEmail}` : ''}</p>
@@ -88,38 +185,30 @@ export function LoggedInView({
         groups={groups}
         groupsLoading={groupsLoading}
         groupsError={groupsError}
-        groupName={groupName}
         activeGroupId={activeGroupId}
-        onGroupNameChange={onGroupNameChange}
-        onCreateGroup={onCreateGroup}
-        onSelectGroup={onSelectGroup}
+        onCreateGroup={handleCreateGroup}
+        onSelectGroup={setActiveGroupId}
       />
 
       {activeGroupId ? (
         <MembersPanel
-          memberEmail={memberEmail}
           memberStatus={memberStatus}
           membersError={membersError}
           membersLoading={membersLoading}
           members={members}
-          onMemberEmailChange={onMemberEmailChange}
-          onAddMember={onAddMember}
+          onAddMember={handleAddMember}
         />
       ) : null}
 
       {activeGroupId ? (
         <ExpensesPanel
-          expenseDescription={expenseDescription}
-          expenseAmount={expenseAmount}
           expenseStatus={expenseStatus}
           expensesError={expensesError}
           expensesLoading={expensesLoading}
           expenses={expenses}
           membersLoading={membersLoading}
           members={members}
-          onExpenseDescriptionChange={onExpenseDescriptionChange}
-          onExpenseAmountChange={onExpenseAmountChange}
-          onCreateExpense={onCreateExpense}
+          onCreateExpense={handleCreateExpense}
           formatMemberLabel={formatMemberLabel}
         />
       ) : null}
@@ -130,7 +219,12 @@ export function LoggedInView({
           balancesError={balancesError}
           balances={balances}
           settle={settle}
-          onRefresh={onRefreshBalances}
+          onRefresh={() => {
+            if (!activeGroupId) {
+              return;
+            }
+            void loadBalancesAndSettle(activeGroupId);
+          }}
           formatMemberLabel={formatMemberLabel}
         />
       ) : null}

@@ -1,36 +1,45 @@
-import type { SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import type { GroupMember } from '../types';
 
 type MembersPanelProps = {
-  memberEmail: string;
   memberStatus: string;
   membersError: string;
   membersLoading: boolean;
   members: GroupMember[];
-  onMemberEmailChange: (value: string) => void;
-  onAddMember: (event: SubmitEvent<HTMLFormElement>) => void;
+  onAddMember: (email: string) => Promise<boolean> | boolean;
 };
 
 export function MembersPanel({
-  memberEmail,
   memberStatus,
   membersError,
   membersLoading,
   members,
-  onMemberEmailChange,
   onAddMember,
 }: MembersPanelProps) {
+  const [memberEmail, setMemberEmail] = useState('');
+
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!memberEmail.trim()) {
+      return;
+    }
+    const ok = await onAddMember(memberEmail.trim());
+    if (ok) {
+      setMemberEmail('');
+    }
+  };
+
   return (
     <div className="members-card">
       <h2 className="subtitle">Members</h2>
-      <form onSubmit={onAddMember} className="form inline">
+      <form onSubmit={handleSubmit} className="form inline">
         <label className="label">
           Email
           <input
             className="input"
             type="email"
             value={memberEmail}
-            onChange={(event) => onMemberEmailChange(event.target.value)}
+            onChange={(event) => setMemberEmail(event.target.value)}
             placeholder="person@example.com"
             required
           />
