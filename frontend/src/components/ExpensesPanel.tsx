@@ -1,40 +1,40 @@
-import { useState, type SubmitEvent } from 'react';
-import type { Expense, GroupMember } from '../types';
+import { useEffect, useState, type SubmitEvent } from 'react';
+import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
+import { useExpenses } from '../contexts/ExpenseContext';
+import { useGroups } from '../contexts/GroupContext';
+import { useMembers } from '../contexts/MemberContext';
 import { formatMoney } from '../utils/money';
 
-type ExpensesPanelProps = {
-  expenseStatus: string;
-  expensesError: string;
-  expensesLoading: boolean;
-  expenses: Expense[];
-  membersLoading: boolean;
-  members: GroupMember[];
-  onCreateExpense: (
-    description: string,
-    amountInput: string,
-  ) => Promise<boolean> | boolean;
-  formatMemberLabel: (memberId: string) => string;
-};
-
-export function ExpensesPanel({
-  expenseStatus,
-  expensesError,
-  expensesLoading,
-  expenses,
-  membersLoading,
-  members,
-  onCreateExpense,
-  formatMemberLabel,
-}: ExpensesPanelProps) {
+export function ExpensesPanel() {
+  const { activeGroupId } = useGroups();
+  const { expenseStatus, expensesError, expensesLoading, expenses, fetchExpenses, createExpense } =
+    useExpenses();
+  const { membersLoading, members, formatMemberLabel } = useMembers();
+  const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
 
+  useEffect(() => {
+    if (!activeGroupId) {
+      return;
+    }
+    void fetchExpenses(activeGroupId).catch(() => {});
+  }, [activeGroupId, fetchExpenses]);
+
+  if (!activeGroupId) {
+    return null;
+  }
+
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const ok = await onCreateExpense(expenseDescription, expenseAmount);
-    if (ok) {
+    try {
+      await createExpense(activeGroupId, expenseDescription, expenseAmount);
+      await fetchExpenses(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId).catch(() => {});
       setExpenseDescription('');
       setExpenseAmount('');
+    } catch {
+      return;
     }
   };
 

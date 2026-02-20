@@ -1,31 +1,40 @@
-import { useState, type SubmitEvent } from 'react';
-import type { GroupMember } from '../types';
+import { useEffect, useState, type SubmitEvent } from 'react';
+import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
+import { useGroups } from '../contexts/GroupContext';
+import { useMembers } from '../contexts/MemberContext';
 
-type MembersPanelProps = {
-  memberStatus: string;
-  membersError: string;
-  membersLoading: boolean;
-  members: GroupMember[];
-  onAddMember: (email: string) => Promise<boolean> | boolean;
-};
-
-export function MembersPanel({
-  memberStatus,
-  membersError,
-  membersLoading,
-  members,
-  onAddMember,
-}: MembersPanelProps) {
+export function MembersPanel() {
+  const { activeGroupId } = useGroups();
+  const { membersError, membersLoading, members, fetchMembers, addMember } = useMembers();
+  const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [memberEmail, setMemberEmail] = useState('');
+  const [memberStatus, setMemberStatus] = useState('');
+
+  useEffect(() => {
+    if (!activeGroupId) {
+      return;
+    }
+    void fetchMembers(activeGroupId).catch(() => {});
+  }, [activeGroupId, fetchMembers]);
+
+  if (!activeGroupId) {
+    return null;
+  }
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!memberEmail.trim()) {
       return;
     }
-    const ok = await onAddMember(memberEmail.trim());
-    if (ok) {
+    setMemberStatus('');
+    try {
+      await addMember(activeGroupId, memberEmail.trim());
+      setMemberStatus('Member added.');
+      await fetchMembers(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
       setMemberEmail('');
+    } catch (err) {
+      setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
     }
   };
 
