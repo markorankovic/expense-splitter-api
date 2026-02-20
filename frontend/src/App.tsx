@@ -50,7 +50,7 @@ export default function App() {
 
   // TODO: Should consider maybe abstracting the fetch logic into a common function to reduce repetition.
 
-  const fetchMe = async () => {
+  const initializeMe = async () => {
     if (!token) {
       return;
     }
@@ -71,7 +71,7 @@ export default function App() {
     }
   };
 
-  const fetchGroups = async () => {
+  const initializeGroups = async () => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -80,7 +80,7 @@ export default function App() {
     setGroups(data.items);
   };
 
-  const fetchMembers = async (groupId: string) => {
+  const initializeMembers = async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -89,7 +89,7 @@ export default function App() {
   };
 
   // TODO: Maybe this should only fetch the settle and the settle data has the balances data in it as well to avoid needing to make two separate requests and keep them in sync?
-  const fetchBalancesAndSettle = async (groupId: string) => {
+  const initializeBalancesAndSettle = async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -101,7 +101,7 @@ export default function App() {
     setSettle(settleData);
   };
 
-  const fetchExpenses = async (groupId: string) => {
+  const initializeExpenses = async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -111,7 +111,7 @@ export default function App() {
 
   useEffect(() => {
     if (loggedIn) {
-      fetchMe();
+      initializeMe();
     } else {
       setGroups([]);
       setMeId(null);
@@ -230,10 +230,10 @@ export default function App() {
             expenses={expenses}
             balances={balances}
             settle={settle}
-            onLoadGroups={fetchGroups}
-            onLoadMembers={fetchMembers}
-            onLoadExpenses={fetchExpenses}
-            onLoadBalancesAndSettle={fetchBalancesAndSettle}
+            onLoadGroups={initializeGroups}
+            onLoadMembers={initializeMembers}
+            onLoadExpenses={initializeExpenses}
+            onLoadBalancesAndSettle={initializeBalancesAndSettle}
             onCreateGroup={handleCreateGroup}
             onAddMember={handleAddMember}
             onCreateExpense={handleCreateExpense}
