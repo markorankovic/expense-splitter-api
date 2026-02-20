@@ -16,7 +16,7 @@ type MemberContextValue = {
   membersError: string;
   memberEmailById: Map<string, string>;
   formatMemberLabel: (memberId: string) => string;
-  loadMembers: (groupId: string) => Promise<void>;
+  fetchMembers: (groupId: string) => Promise<void>;
   addMember: (groupId: string, email: string) => Promise<void>;
   resetMembers: () => void;
 };
@@ -36,7 +36,7 @@ export function MemberProvider({ children }: PropsWithChildren) {
 
   const formatMemberLabel = (memberId: string) => memberEmailById.get(memberId) ?? memberId;
 
-  const loadMembers = async (groupId: string) => {
+  const fetchMembers = async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -89,7 +89,7 @@ export function MemberProvider({ children }: PropsWithChildren) {
       membersError,
       memberEmailById,
       formatMemberLabel,
-      loadMembers,
+      fetchMembers,
       addMember,
       resetMembers,
     }),

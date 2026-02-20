@@ -14,7 +14,7 @@ type GroupContextValue = {
   groups: Group[];
   groupsLoading: boolean;
   groupsError: string;
-  loadGroups: () => Promise<void>;
+  fetchGroups: () => Promise<void>;
   createGroup: (name: string) => Promise<void>;
 };
 
@@ -26,7 +26,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
 
-  const loadGroups = async () => {
+  const fetchGroups = async () => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -73,7 +73,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
       groups,
       groupsLoading,
       groupsError,
-      loadGroups,
+      fetchGroups,
       createGroup,
     }),
     [groups, groupsLoading, groupsError],

@@ -16,7 +16,7 @@ type ExpenseContextValue = {
   expensesLoading: boolean;
   expensesError: string;
   expenseStatus: string;
-  loadExpenses: (groupId: string) => Promise<void>;
+  fetchExpenses: (groupId: string) => Promise<void>;
   createExpense: (
     groupId: string,
     description: string,
@@ -36,7 +36,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
   const [expensesError, setExpensesError] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
 
-  const loadExpenses = async (groupId: string) => {
+  const fetchExpenses = async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -113,7 +113,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       expensesLoading,
       expensesError,
       expenseStatus,
-      loadExpenses,
+      fetchExpenses,
       createExpense,
       resetExpenses,
     }),

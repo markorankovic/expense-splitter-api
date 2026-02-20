@@ -15,7 +15,7 @@ type BalancesAndSettleContextValue = {
   settle: SettleResponse | null;
   balancesLoading: boolean;
   balancesError: string;
-  loadBalancesAndSettle: (groupId: string) => Promise<void>;
+  fetchBalancesAndSettle: (groupId: string) => Promise<void>;
   resetBalancesAndSettle: () => void;
 };
 
@@ -29,7 +29,7 @@ export function BalancesAndSettleProvider({ children }: PropsWithChildren) {
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [balancesError, setBalancesError] = useState('');
 
-  const loadBalancesAndSettle = async (groupId: string) => {
+  const fetchBalancesAndSettle = async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -71,7 +71,7 @@ export function BalancesAndSettleProvider({ children }: PropsWithChildren) {
       settle,
       balancesLoading,
       balancesError,
-      loadBalancesAndSettle,
+      fetchBalancesAndSettle,
       resetBalancesAndSettle,
     }),
     [balances, settle, balancesLoading, balancesError],

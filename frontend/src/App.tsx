@@ -11,17 +11,24 @@ import { useMe } from './contexts/MeContext';
 export default function App() {
   const { loading, error, loggedIn, registerStatus, login, register, logout } = useAuth();
   const { meId, meEmail } = useMe();
-  const { groups, groupsLoading, groupsError, loadGroups, createGroup } = useGroups();
-  const { members, membersLoading, membersError, formatMemberLabel, loadMembers, addMember } =
+  const { groups, groupsLoading, groupsError, fetchGroups, createGroup } = useGroups();
+  const { members, membersLoading, membersError, formatMemberLabel, fetchMembers, addMember } =
     useMembers();
   const {
     balances,
     settle,
     balancesLoading,
     balancesError,
-    loadBalancesAndSettle,
+    fetchBalancesAndSettle,
   } = useBalancesAndSettle();
-  const { expenses, expensesLoading, expensesError, expenseStatus, loadExpenses, createExpense } =
+  const {
+    expenses,
+    expensesLoading,
+    expensesError,
+    expenseStatus,
+    fetchExpenses,
+    createExpense,
+  } =
     useExpenses();
 
   return (
@@ -47,10 +54,10 @@ export default function App() {
             settle={settle}
             balancesLoading={balancesLoading}
             balancesError={balancesError}
-            onLoadGroups={loadGroups}
-            onLoadMembers={loadMembers}
-            onLoadExpenses={loadExpenses}
-            onLoadBalancesAndSettle={loadBalancesAndSettle}
+            onLoadGroups={fetchGroups}
+            onLoadMembers={fetchMembers}
+            onLoadExpenses={fetchExpenses}
+            onLoadBalancesAndSettle={fetchBalancesAndSettle}
             onCreateGroup={createGroup}
             onAddMember={addMember}
             onCreateExpense={createExpense}

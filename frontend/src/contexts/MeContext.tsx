@@ -12,7 +12,7 @@ import { useAuth } from './AuthContext';
 type MeContextValue = {
   meId: string | null;
   meEmail: string | null;
-  loadMe: () => Promise<void>;
+  fetchMe: () => Promise<void>;
 };
 
 const MeContext = createContext<MeContextValue | undefined>(undefined);
@@ -22,7 +22,7 @@ export function MeProvider({ children }: PropsWithChildren) {
   const [meId, setMeId] = useState<string | null>(null);
   const [meEmail, setMeEmail] = useState<string | null>(null);
 
-  const loadMe = async () => {
+  const fetchMe = async () => {
     if (!token) {
       setMeId(null);
       setMeEmail(null);
@@ -49,7 +49,7 @@ export function MeProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (loggedIn) {
-      void loadMe();
+      void fetchMe();
       return;
     }
 
@@ -61,7 +61,7 @@ export function MeProvider({ children }: PropsWithChildren) {
     () => ({
       meId,
       meEmail,
-      loadMe,
+      fetchMe,
     }),
     [meId, meEmail],
   );
