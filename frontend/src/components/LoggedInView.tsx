@@ -15,10 +15,19 @@ type LoggedInViewProps = {
   meId: string | null;
   meEmail: string | null;
   groups: Group[];
+  groupsLoading: boolean;
+  groupsError: string;
   members: GroupMember[];
+  membersLoading: boolean;
+  membersError: string;
   expenses: Expense[];
+  expensesLoading: boolean;
+  expensesError: string;
+  expenseStatus: string;
   balances: BalancesResponse | null;
   settle: SettleResponse | null;
+  balancesLoading: boolean;
+  balancesError: string;
   onLoadGroups: () => Promise<void>;
   onLoadMembers: (groupId: string) => Promise<void>;
   onLoadExpenses: (groupId: string) => Promise<void>;
@@ -40,10 +49,19 @@ export function LoggedInView({
   meId,
   meEmail,
   groups,
+  groupsLoading,
+  groupsError,
   members,
+  membersLoading,
+  membersError,
   expenses,
+  expensesLoading,
+  expensesError,
+  expenseStatus,
   balances,
   settle,
+  balancesLoading,
+  balancesError,
   onLoadGroups,
   onLoadMembers,
   onLoadExpenses,
@@ -55,68 +73,11 @@ export function LoggedInView({
   onLogout,
 }: LoggedInViewProps) {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
-  const [groupsLoading, setGroupsLoading] = useState(false);
-  const [groupsError, setGroupsError] = useState('');
-  const [membersLoading, setMembersLoading] = useState(false);
-  const [membersError, setMembersError] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
-  const [expensesLoading, setExpensesLoading] = useState(false);
-  const [expensesError, setExpensesError] = useState('');
-  const [expenseStatus, setExpenseStatus] = useState('');
-  const [balancesLoading, setBalancesLoading] = useState(false);
-  const [balancesError, setBalancesError] = useState('');
-
-  const loadGroups = async () => {
-    setGroupsError('');
-    setGroupsLoading(true);
-    try {
-      await onLoadGroups();
-    } catch (err) {
-      setGroupsError(err instanceof Error ? err.message : 'Failed to load groups');
-    } finally {
-      setGroupsLoading(false);
-    }
-  };
-
-  const loadMembers = async (groupId: string) => {
-    setMembersError('');
-    setMembersLoading(true);
-    try {
-      await onLoadMembers(groupId);
-    } catch (err) {
-      setMembersError(err instanceof Error ? err.message : 'Failed to load members');
-    } finally {
-      setMembersLoading(false);
-    }
-  };
-
-  const loadExpenses = async (groupId: string) => {
-    setExpensesError('');
-    setExpensesLoading(true);
-    try {
-      await onLoadExpenses(groupId);
-    } catch (err) {
-      setExpensesError(err instanceof Error ? err.message : 'Failed to load expenses');
-    } finally {
-      setExpensesLoading(false);
-    }
-  };
-
-  const loadBalancesAndSettle = async (groupId: string) => {
-    setBalancesError('');
-    setBalancesLoading(true);
-    try {
-      await onLoadBalancesAndSettle(groupId);
-    } catch (err) {
-      setBalancesError(err instanceof Error ? err.message : 'Failed to load balances');
-    } finally {
-      setBalancesLoading(false);
-    }
-  };
 
   useEffect(() => {
-    void loadGroups();
-  }, []);
+    void onLoadGroups().catch(() => {});
+  }, [onLoadGroups]);
 
   useEffect(() => {
     if (!activeGroupId && groups.length > 0) {
@@ -128,18 +89,18 @@ export function LoggedInView({
     if (!activeGroupId) {
       return;
     }
-    void loadMembers(activeGroupId);
-    void loadExpenses(activeGroupId);
-    void loadBalancesAndSettle(activeGroupId);
-  }, [activeGroupId]);
+
+    void onLoadMembers(activeGroupId).catch(() => {});
+    void onLoadExpenses(activeGroupId).catch(() => {});
+    void onLoadBalancesAndSettle(activeGroupId).catch(() => {});
+  }, [activeGroupId, onLoadMembers, onLoadExpenses, onLoadBalancesAndSettle]);
 
   const handleCreateGroup = async (name: string) => {
     try {
       await onCreateGroup(name);
-      await loadGroups();
+      await onLoadGroups();
       return true;
-    } catch (err) {
-      setGroupsError(err instanceof Error ? err.message : 'Failed to create group');
+    } catch {
       return false;
     }
   };
@@ -148,12 +109,13 @@ export function LoggedInView({
     if (!activeGroupId) {
       return false;
     }
+
     setMemberStatus('');
     try {
       await onAddMember(activeGroupId, email);
       setMemberStatus('Member added.');
-      await loadMembers(activeGroupId);
-      await loadBalancesAndSettle(activeGroupId);
+      await onLoadMembers(activeGroupId);
+      await onLoadBalancesAndSettle(activeGroupId);
       return true;
     } catch (err) {
       setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
@@ -165,14 +127,13 @@ export function LoggedInView({
     if (!activeGroupId || !meId) {
       return false;
     }
+
     try {
       await onCreateExpense(activeGroupId, description, amountInput, meId, members);
-      setExpenseStatus('Expense added.');
-      await loadExpenses(activeGroupId);
-      await loadBalancesAndSettle(activeGroupId);
+      await onLoadExpenses(activeGroupId);
+      await onLoadBalancesAndSettle(activeGroupId);
       return true;
-    } catch (err) {
-      setExpenseStatus(err instanceof Error ? err.message : 'Failed to add expense');
+    } catch {
       return false;
     }
   };
@@ -223,7 +184,7 @@ export function LoggedInView({
             if (!activeGroupId) {
               return;
             }
-            void loadBalancesAndSettle(activeGroupId);
+            void onLoadBalancesAndSettle(activeGroupId).catch(() => {});
           }}
           formatMemberLabel={formatMemberLabel}
         />
