@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useMemo,
   useState,
   type PropsWithChildren,
 } from 'react';
@@ -79,19 +78,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setError('');
   };
 
-  const value = useMemo(
-    () => ({
-      token,
-      loading,
-      error,
-      loggedIn,
-      registerStatus,
-      login,
-      register,
-      logout,
-    }),
-    [token, loading, error, loggedIn, registerStatus],
-  );
+  const value = {
+    token,
+    loading,
+    error,
+    loggedIn,
+    registerStatus,
+    login,
+    register,
+    logout,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

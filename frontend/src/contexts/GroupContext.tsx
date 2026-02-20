@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -26,7 +27,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -43,9 +44,9 @@ export function GroupProvider({ children }: PropsWithChildren) {
     } finally {
       setGroupsLoading(false);
     }
-  };
+  }, [token]);
 
-  const createGroup = async (name: string) => {
+  const createGroup = useCallback(async (name: string) => {
     if (!token || !name) {
       throw new Error('Invalid group name');
     }
@@ -58,7 +59,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
       setGroupsError(message);
       throw err;
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!loggedIn) {
@@ -76,7 +77,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
       fetchGroups,
       createGroup,
     }),
-    [groups, groupsLoading, groupsError],
+    [groups, groupsLoading, groupsError, fetchGroups, createGroup],
   );
 
   return <GroupContext.Provider value={value}>{children}</GroupContext.Provider>;

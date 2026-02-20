@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -24,7 +25,6 @@ type ExpenseContextValue = {
     paidByUserId: string,
     members: GroupMember[],
   ) => Promise<void>;
-  resetExpenses: () => void;
 };
 
 const ExpenseContext = createContext<ExpenseContextValue | undefined>(undefined);
@@ -36,7 +36,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
   const [expensesError, setExpensesError] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
 
-  const fetchExpenses = async (groupId: string) => {
+  const fetchExpenses = useCallback(async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -53,9 +53,9 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
     } finally {
       setExpensesLoading(false);
     }
-  };
+  }, [token]);
 
-  const createExpense = async (
+  const createExpense = useCallback(async (
     groupId: string,
     description: string,
     amountInput: string,
@@ -92,18 +92,14 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       setExpenseStatus(message);
       throw err;
     }
-  };
-
-  const resetExpenses = () => {
-    setExpenses([]);
-    setExpensesError('');
-    setExpensesLoading(false);
-    setExpenseStatus('');
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!loggedIn) {
-      resetExpenses();
+      setExpenses([]);
+      setExpensesError('');
+      setExpensesLoading(false);
+      setExpenseStatus('');
     }
   }, [loggedIn]);
 
@@ -115,9 +111,15 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       expenseStatus,
       fetchExpenses,
       createExpense,
-      resetExpenses,
     }),
-    [expenses, expensesLoading, expensesError, expenseStatus],
+    [
+      expenses,
+      expensesLoading,
+      expensesError,
+      expenseStatus,
+      fetchExpenses,
+      createExpense,
+    ],
   );
 
   return <ExpenseContext.Provider value={value}>{children}</ExpenseContext.Provider>;

@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -22,7 +23,7 @@ export function MeProvider({ children }: PropsWithChildren) {
   const [meId, setMeId] = useState<string | null>(null);
   const [meEmail, setMeEmail] = useState<string | null>(null);
 
-  const fetchMe = async () => {
+  const fetchMe = useCallback(async () => {
     if (!token) {
       setMeId(null);
       setMeEmail(null);
@@ -45,7 +46,7 @@ export function MeProvider({ children }: PropsWithChildren) {
       setMeId(null);
       setMeEmail(null);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (loggedIn) {
@@ -55,7 +56,7 @@ export function MeProvider({ children }: PropsWithChildren) {
 
     setMeId(null);
     setMeEmail(null);
-  }, [loggedIn, token]);
+  }, [loggedIn, fetchMe]);
 
   const value = useMemo(
     () => ({
@@ -63,7 +64,7 @@ export function MeProvider({ children }: PropsWithChildren) {
       meEmail,
       fetchMe,
     }),
-    [meId, meEmail],
+    [meId, meEmail, fetchMe],
   );
 
   return <MeContext.Provider value={value}>{children}</MeContext.Provider>;

@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -16,7 +17,6 @@ type BalancesAndSettleContextValue = {
   balancesLoading: boolean;
   balancesError: string;
   fetchBalancesAndSettle: (groupId: string) => Promise<void>;
-  resetBalancesAndSettle: () => void;
 };
 
 const BalancesAndSettleContext =
@@ -29,7 +29,7 @@ export function BalancesAndSettleProvider({ children }: PropsWithChildren) {
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [balancesError, setBalancesError] = useState('');
 
-  const fetchBalancesAndSettle = async (groupId: string) => {
+  const fetchBalancesAndSettle = useCallback(async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -50,18 +50,14 @@ export function BalancesAndSettleProvider({ children }: PropsWithChildren) {
     } finally {
       setBalancesLoading(false);
     }
-  };
-
-  const resetBalancesAndSettle = () => {
-    setBalances(null);
-    setSettle(null);
-    setBalancesError('');
-    setBalancesLoading(false);
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!loggedIn) {
-      resetBalancesAndSettle();
+      setBalances(null);
+      setSettle(null);
+      setBalancesError('');
+      setBalancesLoading(false);
     }
   }, [loggedIn]);
 
@@ -72,9 +68,14 @@ export function BalancesAndSettleProvider({ children }: PropsWithChildren) {
       balancesLoading,
       balancesError,
       fetchBalancesAndSettle,
-      resetBalancesAndSettle,
     }),
-    [balances, settle, balancesLoading, balancesError],
+    [
+      balances,
+      settle,
+      balancesLoading,
+      balancesError,
+      fetchBalancesAndSettle,
+    ],
   );
 
   return (

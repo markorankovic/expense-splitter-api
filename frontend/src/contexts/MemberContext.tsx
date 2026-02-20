@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -18,7 +19,6 @@ type MemberContextValue = {
   formatMemberLabel: (memberId: string) => string;
   fetchMembers: (groupId: string) => Promise<void>;
   addMember: (groupId: string, email: string) => Promise<void>;
-  resetMembers: () => void;
 };
 
 const MemberContext = createContext<MemberContextValue | undefined>(undefined);
@@ -34,9 +34,12 @@ export function MemberProvider({ children }: PropsWithChildren) {
     [members],
   );
 
-  const formatMemberLabel = (memberId: string) => memberEmailById.get(memberId) ?? memberId;
+  const formatMemberLabel = useCallback(
+    (memberId: string) => memberEmailById.get(memberId) ?? memberId,
+    [memberEmailById],
+  );
 
-  const fetchMembers = async (groupId: string) => {
+  const fetchMembers = useCallback(async (groupId: string) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -53,9 +56,9 @@ export function MemberProvider({ children }: PropsWithChildren) {
     } finally {
       setMembersLoading(false);
     }
-  };
+  }, [token]);
 
-  const addMember = async (groupId: string, email: string) => {
+  const addMember = useCallback(async (groupId: string, email: string) => {
     if (!token || !groupId || !email) {
       throw new Error('Invalid member email');
     }
@@ -68,17 +71,13 @@ export function MemberProvider({ children }: PropsWithChildren) {
       setMembersError(message);
       throw err;
     }
-  };
-
-  const resetMembers = () => {
-    setMembers([]);
-    setMembersError('');
-    setMembersLoading(false);
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!loggedIn) {
-      resetMembers();
+      setMembers([]);
+      setMembersError('');
+      setMembersLoading(false);
     }
   }, [loggedIn]);
 
@@ -91,9 +90,16 @@ export function MemberProvider({ children }: PropsWithChildren) {
       formatMemberLabel,
       fetchMembers,
       addMember,
-      resetMembers,
     }),
-    [members, membersLoading, membersError, memberEmailById],
+    [
+      members,
+      membersLoading,
+      membersError,
+      memberEmailById,
+      formatMemberLabel,
+      fetchMembers,
+      addMember,
+    ],
   );
 
   return <MemberContext.Provider value={value}>{children}</MemberContext.Provider>;
