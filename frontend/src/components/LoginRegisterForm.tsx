@@ -1,31 +1,18 @@
 import { useState, type SubmitEvent } from 'react';
-import type { RegisterStatus } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
-type LoginRegisterFormProps = {
-  loading: boolean;
-  error: string;
-  registerStatus: RegisterStatus | null;
-  onLogin: (email: string, password: string) => Promise<void> | void;
-  onRegister: (email: string, password: string) => Promise<void> | void;
-};
-
-export function LoginRegisterForm({
-  loading,
-  error,
-  registerStatus,
-  onLogin,
-  onRegister,
-}: LoginRegisterFormProps) {
+export function LoginRegisterForm() {
+  const { loading, error, registerStatus, login, register } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void onLogin(email, password);
+    void login(email, password);
   };
 
   const handleRegister = () => {
-    void onRegister(email, password);
+    void register(email, password);
   };
 
   return (
