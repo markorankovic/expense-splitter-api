@@ -1,86 +1,45 @@
 import { useEffect, useState } from 'react';
-import type {
-  BalancesResponse,
-  Expense,
-  Group,
-  GroupMember,
-  SettleResponse,
-} from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
+import { useExpenses } from '../contexts/ExpenseContext';
+import { useGroups } from '../contexts/GroupContext';
+import { useMembers } from '../contexts/MemberContext';
+import { useMe } from '../contexts/MeContext';
 import { BalancesPanel } from './BalancesPanel';
 import { ExpensesPanel } from './ExpensesPanel';
 import { GroupsPanel } from './GroupsPanel';
 import { MembersPanel } from './MembersPanel';
 
-type LoggedInViewProps = {
-  meId: string | null;
-  meEmail: string | null;
-  groups: Group[];
-  groupsLoading: boolean;
-  groupsError: string;
-  members: GroupMember[];
-  membersLoading: boolean;
-  membersError: string;
-  expenses: Expense[];
-  expensesLoading: boolean;
-  expensesError: string;
-  expenseStatus: string;
-  balances: BalancesResponse | null;
-  settle: SettleResponse | null;
-  balancesLoading: boolean;
-  balancesError: string;
-  onLoadGroups: () => Promise<void>;
-  onLoadMembers: (groupId: string) => Promise<void>;
-  onLoadExpenses: (groupId: string) => Promise<void>;
-  onLoadBalancesAndSettle: (groupId: string) => Promise<void>;
-  onCreateGroup: (name: string) => Promise<void>;
-  onAddMember: (groupId: string, email: string) => Promise<void>;
-  onCreateExpense: (
-    groupId: string,
-    description: string,
-    amountInput: string,
-    meId: string,
-    members: GroupMember[],
-  ) => Promise<void>;
-  formatMemberLabel: (memberId: string) => string;
-  onLogout: () => void;
-};
+export function LoggedInView() {
+  const { logout } = useAuth();
+  const { meId, meEmail } = useMe();
+  const { groups, groupsLoading, groupsError, fetchGroups, createGroup } = useGroups();
+  const { members, membersLoading, membersError, formatMemberLabel, fetchMembers, addMember } =
+    useMembers();
+  const { expenses, expensesLoading, expensesError, expenseStatus, fetchExpenses, createExpense } =
+    useExpenses();
+  const {
+    balances,
+    settle,
+    balancesLoading,
+    balancesError,
+    fetchBalancesAndSettle,
+  } = useBalancesAndSettle();
 
-export function LoggedInView({
-  meId,
-  meEmail,
-  groups,
-  groupsLoading,
-  groupsError,
-  members,
-  membersLoading,
-  membersError,
-  expenses,
-  expensesLoading,
-  expensesError,
-  expenseStatus,
-  balances,
-  settle,
-  balancesLoading,
-  balancesError,
-  onLoadGroups,
-  onLoadMembers,
-  onLoadExpenses,
-  onLoadBalancesAndSettle,
-  onCreateGroup,
-  onAddMember,
-  onCreateExpense,
-  formatMemberLabel,
-  onLogout,
-}: LoggedInViewProps) {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [memberStatus, setMemberStatus] = useState('');
 
   useEffect(() => {
-    void onLoadGroups().catch(() => {});
-  }, [onLoadGroups]);
+    void fetchGroups().catch(() => {});
+  }, [fetchGroups]);
 
   useEffect(() => {
-    if (!activeGroupId && groups.length > 0) {
+    if (!groups.length) {
+      setActiveGroupId(null);
+      return;
+    }
+
+    if (!activeGroupId || !groups.some((group) => group.id === activeGroupId)) {
       setActiveGroupId(groups[0].id);
     }
   }, [activeGroupId, groups]);
@@ -90,15 +49,15 @@ export function LoggedInView({
       return;
     }
 
-    void onLoadMembers(activeGroupId).catch(() => {});
-    void onLoadExpenses(activeGroupId).catch(() => {});
-    void onLoadBalancesAndSettle(activeGroupId).catch(() => {});
-  }, [activeGroupId, onLoadMembers, onLoadExpenses, onLoadBalancesAndSettle]);
+    void fetchMembers(activeGroupId).catch(() => {});
+    void fetchExpenses(activeGroupId).catch(() => {});
+    void fetchBalancesAndSettle(activeGroupId).catch(() => {});
+  }, [activeGroupId, fetchMembers, fetchExpenses, fetchBalancesAndSettle]);
 
   const handleCreateGroup = async (name: string) => {
     try {
-      await onCreateGroup(name);
-      await onLoadGroups();
+      await createGroup(name);
+      await fetchGroups();
       return true;
     } catch {
       return false;
@@ -112,10 +71,10 @@ export function LoggedInView({
 
     setMemberStatus('');
     try {
-      await onAddMember(activeGroupId, email);
+      await addMember(activeGroupId, email);
       setMemberStatus('Member added.');
-      await onLoadMembers(activeGroupId);
-      await onLoadBalancesAndSettle(activeGroupId);
+      await fetchMembers(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
       return true;
     } catch (err) {
       setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
@@ -129,9 +88,9 @@ export function LoggedInView({
     }
 
     try {
-      await onCreateExpense(activeGroupId, description, amountInput, meId, members);
-      await onLoadExpenses(activeGroupId);
-      await onLoadBalancesAndSettle(activeGroupId);
+      await createExpense(activeGroupId, description, amountInput, meId, members);
+      await fetchExpenses(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
       return true;
     } catch {
       return false;
@@ -184,14 +143,14 @@ export function LoggedInView({
             if (!activeGroupId) {
               return;
             }
-            void onLoadBalancesAndSettle(activeGroupId).catch(() => {});
+            void fetchBalancesAndSettle(activeGroupId).catch(() => {});
           }}
           formatMemberLabel={formatMemberLabel}
         />
       ) : null}
 
       <div className="logout-card">
-        <button type="button" onClick={onLogout} className="button ghost">
+        <button type="button" onClick={logout} className="button ghost">
           Log out
         </button>
       </div>
