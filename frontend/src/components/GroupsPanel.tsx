@@ -1,33 +1,33 @@
-import { useState, type SubmitEvent } from 'react';
-import type { Group } from '../types';
+import { useEffect, useState, type SubmitEvent } from 'react';
+import { useGroups } from '../contexts/GroupContext';
 
-type GroupsPanelProps = {
-  groups: Group[];
-  groupsLoading: boolean;
-  groupsError: string;
-  activeGroupId: string | null;
-  onCreateGroup: (name: string) => Promise<boolean> | boolean;
-  onSelectGroup: (groupId: string) => void;
-};
-
-export function GroupsPanel({
-  groups,
-  groupsLoading,
-  groupsError,
-  activeGroupId,
-  onCreateGroup,
-  onSelectGroup,
-}: GroupsPanelProps) {
+export function GroupsPanel() {
+  const {
+    groups,
+    groupsLoading,
+    groupsError,
+    activeGroupId,
+    fetchGroups,
+    createGroup,
+    selectActiveGroup,
+  } = useGroups();
   const [groupName, setGroupName] = useState('');
+
+  useEffect(() => {
+    void fetchGroups().catch(() => {});
+  }, [fetchGroups]);
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!groupName.trim()) {
       return;
     }
-    const ok = await onCreateGroup(groupName.trim());
-    if (ok) {
+    try {
+      await createGroup(groupName.trim());
+      await fetchGroups();
       setGroupName('');
+    } catch {
+      return;
     }
   };
 
@@ -62,7 +62,7 @@ export function GroupsPanel({
               <button
                 type="button"
                 className={`group-button${activeGroupId === group.id ? ' active' : ''}`}
-                onClick={() => onSelectGroup(group.id)}
+                onClick={() => selectActiveGroup(group.id)}
               >
                 {group.name}
               </button>

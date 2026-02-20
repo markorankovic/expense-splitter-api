@@ -8,9 +8,11 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { createExpense as createExpenseRequest, fetchExpenses as fetchExpensesRequest } from '../api';
-import type { Expense, GroupMember } from '../types';
+import type { Expense } from '../types';
 import { gbpToPence } from '../utils/money';
 import { useAuth } from './AuthContext';
+import { useMe } from './MeContext';
+import { useMembers } from './MemberContext';
 
 type ExpenseContextValue = {
   expenses: Expense[];
@@ -22,8 +24,6 @@ type ExpenseContextValue = {
     groupId: string,
     description: string,
     amountInput: string,
-    paidByUserId: string,
-    members: GroupMember[],
   ) => Promise<void>;
 };
 
@@ -31,6 +31,8 @@ const ExpenseContext = createContext<ExpenseContextValue | undefined>(undefined)
 
 export function ExpenseProvider({ children }: PropsWithChildren) {
   const { token, loggedIn } = useAuth();
+  const { meId } = useMe();
+  const { members } = useMembers();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [expensesError, setExpensesError] = useState('');
@@ -59,10 +61,8 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
     groupId: string,
     description: string,
     amountInput: string,
-    paidByUserId: string,
-    members: GroupMember[],
   ) => {
-    if (!token || !groupId || !paidByUserId || members.length === 0) {
+    if (!token || !groupId || !meId || members.length === 0) {
       throw new Error('Missing expense data');
     }
 
@@ -83,7 +83,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       await createExpenseRequest(token, groupId, {
         description: description.trim(),
         amount: pence,
-        paidByUserId,
+        paidByUserId: meId,
         splits,
       });
       setExpenseStatus('Expense added.');
@@ -92,7 +92,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       setExpenseStatus(message);
       throw err;
     }
-  }, [token]);
+  }, [token, meId, members]);
 
   useEffect(() => {
     if (!loggedIn) {

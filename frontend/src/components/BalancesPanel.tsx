@@ -1,23 +1,31 @@
-import type { BalancesResponse, SettleResponse } from '../types';
+import { useEffect } from 'react';
+import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
+import { useGroups } from '../contexts/GroupContext';
+import { useMembers } from '../contexts/MemberContext';
 import { formatMoney } from '../utils/money';
 
-type BalancesPanelProps = {
-  balancesLoading: boolean;
-  balancesError: string;
-  balances: BalancesResponse | null;
-  settle: SettleResponse | null;
-  onRefresh: () => void;
-  formatMemberLabel: (memberId: string) => string;
-};
+export function BalancesPanel() {
+  const { activeGroupId } = useGroups();
+  const { formatMemberLabel } = useMembers();
+  const {
+    balancesLoading,
+    balancesError,
+    balances,
+    settle,
+    fetchBalancesAndSettle,
+  } = useBalancesAndSettle();
 
-export function BalancesPanel({
-  balancesLoading,
-  balancesError,
-  balances,
-  settle,
-  onRefresh,
-  formatMemberLabel,
-}: BalancesPanelProps) {
+  useEffect(() => {
+    if (!activeGroupId) {
+      return;
+    }
+    void fetchBalancesAndSettle(activeGroupId).catch(() => {});
+  }, [activeGroupId, fetchBalancesAndSettle]);
+
+  if (!activeGroupId) {
+    return null;
+  }
+
   return (
     <div className="balances-card">
       <div className="balances-header">
@@ -25,7 +33,9 @@ export function BalancesPanel({
         <button
           type="button"
           className="button ghost"
-          onClick={onRefresh}
+          onClick={() => {
+            void fetchBalancesAndSettle(activeGroupId).catch(() => {});
+          }}
           disabled={balancesLoading}
         >
           Refresh

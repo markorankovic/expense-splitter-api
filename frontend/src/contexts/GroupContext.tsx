@@ -15,8 +15,10 @@ type GroupContextValue = {
   groups: Group[];
   groupsLoading: boolean;
   groupsError: string;
+  activeGroupId: string | null;
   fetchGroups: () => Promise<void>;
   createGroup: (name: string) => Promise<void>;
+  selectActiveGroup: (groupId: string) => void;
 };
 
 const GroupContext = createContext<GroupContextValue | undefined>(undefined);
@@ -26,6 +28,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
   const fetchGroups = useCallback(async () => {
     if (!token) {
@@ -66,18 +69,43 @@ export function GroupProvider({ children }: PropsWithChildren) {
       setGroups([]);
       setGroupsError('');
       setGroupsLoading(false);
+      setActiveGroupId(null);
     }
   }, [loggedIn]);
+
+  useEffect(() => {
+    if (!groups.length) {
+      setActiveGroupId(null);
+      return;
+    }
+    if (!activeGroupId || !groups.some((group) => group.id === activeGroupId)) {
+      setActiveGroupId(groups[0].id);
+    }
+  }, [groups, activeGroupId]);
+
+  const selectActiveGroup = (groupId: string) => {
+    setActiveGroupId(groupId);
+  };
 
   const value = useMemo(
     () => ({
       groups,
       groupsLoading,
       groupsError,
+      activeGroupId,
       fetchGroups,
       createGroup,
+      selectActiveGroup,
     }),
-    [groups, groupsLoading, groupsError, fetchGroups, createGroup],
+    [
+      groups,
+      groupsLoading,
+      groupsError,
+      activeGroupId,
+      fetchGroups,
+      createGroup,
+      selectActiveGroup,
+    ],
   );
 
   return <GroupContext.Provider value={value}>{children}</GroupContext.Provider>;
