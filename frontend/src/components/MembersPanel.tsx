@@ -5,7 +5,7 @@ import { useMembers } from '../contexts/MemberContext';
 import { useMe } from '../contexts/MeContext';
 
 export function MembersPanel() {
-  const { activeGroupId } = useGroups();
+  const { groups, activeGroupId } = useGroups();
   const { meId } = useMe();
   const { membersError, membersLoading, members, fetchMembers, addMember, removeMember } =
     useMembers();
@@ -23,6 +23,9 @@ export function MembersPanel() {
   if (!activeGroupId) {
     return null;
   }
+
+  const activeGroup = groups.find((group) => group.id === activeGroupId) ?? null;
+  const canManageMembers = activeGroup?.ownerId === meId;
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -96,8 +99,14 @@ export function MembersPanel() {
                   type="button"
                   className="button ghost member-action"
                   aria-label="Remove member"
-                  title={member.id === meId ? 'You cannot remove yourself' : 'Remove member'}
-                  disabled={member.id === meId}
+                  title={
+                    !canManageMembers
+                      ? 'Only the group owner can remove members'
+                      : member.id === meId
+                        ? 'You cannot remove yourself'
+                        : 'Remove member'
+                  }
+                  disabled={!canManageMembers || member.id === meId}
                   onClick={() => {
                     void handleRemove(member.id);
                   }}
