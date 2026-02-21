@@ -1,5 +1,6 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
 import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
+import { useExpenses } from '../contexts/ExpenseContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
 import { useMe } from '../contexts/MeContext';
@@ -7,6 +8,7 @@ import { useMe } from '../contexts/MeContext';
 export function MembersPanel() {
   const { groups, activeGroupId } = useGroups();
   const { meId } = useMe();
+  const { fetchExpenses } = useExpenses();
   const { membersError, membersLoading, members, fetchMembers, addMember, removeMember } =
     useMembers();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
@@ -54,6 +56,7 @@ export function MembersPanel() {
     try {
       await removeMember(activeGroupId, memberId);
       await fetchMembers(activeGroupId);
+      await fetchExpenses(activeGroupId);
       await fetchBalancesAndSettle(activeGroupId);
       setMemberStatus('Member removed.');
     } catch (err) {

@@ -234,7 +234,13 @@ export class ExpensesService {
     userId: string,
     tx: Prisma.TransactionClient = this.prisma,
   ) {
-    const expenses = await tx.expense.findMany({
+    const remainingMembers = await tx.groupMember.findMany({
+      where: { groupId, userId: { not: userId } },
+      select: { userId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const memberCreatedExpenses = await tx.expense.findMany({
       where: {
         groupId,
         paidByUserId: userId,
@@ -242,16 +248,47 @@ export class ExpensesService {
       select: { id: true },
     });
 
-    if (!expenses.length) {
+    if (memberCreatedExpenses.length) {
+      const createdExpenseIds = memberCreatedExpenses.map((expense) => expense.id);
+      await tx.expenseSplit.deleteMany({
+        where: { expenseId: { in: createdExpenseIds } },
+      });
+      await tx.expense.deleteMany({
+        where: { id: { in: createdExpenseIds } },
+      });
+    }
+
+    if (!remainingMembers.length) {
       return;
     }
 
-    const expenseIds = expenses.map((expense) => expense.id);
+    const remainingExpenses = await tx.expense.findMany({
+      where: { groupId },
+      select: { id: true, amount: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!remainingExpenses.length) {
+      return;
+    }
+
+    const expenseIds = remainingExpenses.map((expense) => expense.id);
     await tx.expenseSplit.deleteMany({
       where: { expenseId: { in: expenseIds } },
     });
-    await tx.expense.deleteMany({
-      where: { id: { in: expenseIds } },
+
+    const splitData = remainingExpenses.flatMap((expense) => {
+      const base = Math.floor(expense.amount / remainingMembers.length);
+      const remainder = expense.amount % remainingMembers.length;
+      return remainingMembers.map((member, index) => ({
+        expenseId: expense.id,
+        userId: member.userId,
+        amount: index < remainder ? base + 1 : base,
+      }));
+    });
+
+    await tx.expenseSplit.createMany({
+      data: splitData,
     });
   }
 
