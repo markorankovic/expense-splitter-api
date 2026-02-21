@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -160,6 +161,25 @@ export class GroupsService {
 
     if (group.ownerId !== userId) {
       throw new ForbiddenException('Only owner can remove members');
+    }
+
+    if (memberId === group.ownerId) {
+      throw new BadRequestException('Owner cannot be removed from group');
+    }
+
+    const hasExpenseHistory = await this.prisma.expense.findFirst({
+      where: {
+        groupId,
+        OR: [
+          { paidByUserId: memberId },
+          { splits: { some: { userId: memberId } } },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (hasExpenseHistory) {
+      throw new ConflictException('Cannot remove member with existing expenses.');
     }
 
     const membership = await this.prisma.groupMember.findUnique({

@@ -2,10 +2,13 @@ import { useEffect, useState, type SubmitEvent } from 'react';
 import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
+import { useMe } from '../contexts/MeContext';
 
 export function MembersPanel() {
   const { activeGroupId } = useGroups();
-  const { membersError, membersLoading, members, fetchMembers, addMember } = useMembers();
+  const { meId } = useMe();
+  const { membersError, membersLoading, members, fetchMembers, addMember, removeMember } =
+    useMembers();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [memberEmail, setMemberEmail] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
@@ -35,6 +38,18 @@ export function MembersPanel() {
       setMemberEmail('');
     } catch (err) {
       setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
+    }
+  };
+
+  const handleRemove = async (memberId: string) => {
+    setMemberStatus('');
+    try {
+      await removeMember(activeGroupId, memberId);
+      await fetchMembers(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
+      setMemberStatus('Member removed.');
+    } catch (err) {
+      setMemberStatus(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
@@ -72,7 +87,23 @@ export function MembersPanel() {
           <ul>
             {members.map((member) => (
               <li key={member.id}>
-                <span className="member-email">{member.email}</span>
+                <div className="member-email-box">
+                  <span className="member-email" title={member.email}>
+                    {member.email}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="button ghost member-action"
+                  aria-label="Remove member"
+                  title={member.id === meId ? 'You cannot remove yourself' : 'Remove member'}
+                  disabled={member.id === meId}
+                  onClick={() => {
+                    void handleRemove(member.id);
+                  }}
+                >
+                  🗑
+                </button>
               </li>
             ))}
           </ul>

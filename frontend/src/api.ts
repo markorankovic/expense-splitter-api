@@ -199,6 +199,21 @@ export const addGroupMember = async (
   return response.json();
 };
 
+export const removeGroupMember = async (
+  token: string,
+  groupId: string,
+  userId: string,
+) => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/members/${userId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to remove member'));
+  }
+  return response.json();
+};
+
 export const createExpense = async (
   token: string,
   groupId: string,
