@@ -6,6 +6,7 @@ import {
 import { GroupAccessService } from '../common/group-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Injectable()
 export class ExpensesService {
@@ -114,6 +115,92 @@ export class ExpensesService {
     }
 
     return expense;
+  }
+
+  async updateExpense(userId: string, groupId: string, expenseId: string, dto: UpdateExpenseDto) {
+    await this.groupAccess.ensureMember(userId, groupId);
+
+    const existing = await this.prisma.expense.findFirst({
+      where: { id: expenseId, groupId },
+      select: { id: true, paidByUserId: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    const members = await this.prisma.groupMember.findMany({
+      where: { groupId },
+      select: { userId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!members.length) {
+      throw new BadRequestException('Group has no members');
+    }
+
+    const base = Math.floor(dto.amount / members.length);
+    const remainder = dto.amount % members.length;
+    const splits = members.map((member, index) => ({
+      userId: member.userId,
+      amount: index < remainder ? base + 1 : base,
+    }));
+
+    return this.prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.update({
+        where: { id: expenseId },
+        data: {
+          description: dto.description,
+          amount: dto.amount,
+        },
+        select: {
+          id: true,
+          groupId: true,
+          description: true,
+          amount: true,
+          paidByUserId: true,
+          createdAt: true,
+        },
+      });
+
+      await tx.expenseSplit.deleteMany({
+        where: { expenseId },
+      });
+
+      await tx.expenseSplit.createMany({
+        data: splits.map((split) => ({
+          expenseId,
+          userId: split.userId,
+          amount: split.amount,
+        })),
+      });
+
+      return expense;
+    });
+  }
+
+  async deleteExpense(userId: string, groupId: string, expenseId: string) {
+    await this.groupAccess.ensureMember(userId, groupId);
+
+    const existing = await this.prisma.expense.findFirst({
+      where: { id: expenseId, groupId },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.expenseSplit.deleteMany({
+        where: { expenseId },
+      });
+      await tx.expense.delete({
+        where: { id: expenseId },
+      });
+    });
+
+    return { ok: true };
   }
 
   private async ensureUsersInGroup(groupId: string, userIds: string[]) {

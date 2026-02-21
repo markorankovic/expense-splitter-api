@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Injectable()
 export class GroupsService {
@@ -168,6 +169,59 @@ export class GroupsService {
 
     await this.prisma.groupMember.delete({
       where: { id: membership.id },
+    });
+
+    return { ok: true };
+  }
+
+  async updateGroup(userId: string, groupId: string, dto: UpdateGroupDto) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    if (group.ownerId !== userId) {
+      throw new ForbiddenException('Only owner can update group');
+    }
+
+    return this.prisma.group.update({
+      where: { id: groupId },
+      data: { name: dto.name },
+      select: { id: true, name: true, createdAt: true, ownerId: true },
+    });
+  }
+
+  async deleteGroup(userId: string, groupId: string) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    if (group.ownerId !== userId) {
+      throw new ForbiddenException('Only owner can delete group');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.expenseSplit.deleteMany({
+        where: { expense: { groupId } },
+      });
+      await tx.expense.deleteMany({
+        where: { groupId },
+      });
+      await tx.groupMember.deleteMany({
+        where: { groupId },
+      });
+      await tx.group.delete({
+        where: { id: groupId },
+      });
     });
 
     return { ok: true };

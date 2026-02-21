@@ -6,6 +6,8 @@ const groupsServiceMock = {
   createGroup: jest.fn(),
   listGroups: jest.fn(),
   getGroup: jest.fn(),
+  updateGroup: jest.fn(),
+  deleteGroup: jest.fn(),
   addMember: jest.fn(),
   removeMember: jest.fn(),
 };

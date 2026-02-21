@@ -6,6 +6,8 @@ const expensesServiceMock = {
   createExpense: jest.fn(),
   listExpenses: jest.fn(),
   getExpense: jest.fn(),
+  updateExpense: jest.fn(),
+  deleteExpense: jest.fn(),
 };
 
 describe('ExpensesController', () => {
