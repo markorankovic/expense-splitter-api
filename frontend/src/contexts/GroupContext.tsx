@@ -7,7 +7,12 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { createGroup as createGroupRequest, fetchGroups as fetchGroupsRequest } from '../api';
+import {
+  createGroup as createGroupRequest,
+  deleteGroup as deleteGroupRequest,
+  fetchGroups as fetchGroupsRequest,
+  updateGroup as updateGroupRequest,
+} from '../api';
 import type { Group } from '../types';
 import { useAuth } from './AuthContext';
 
@@ -18,6 +23,8 @@ type GroupContextValue = {
   activeGroupId: string | null;
   fetchGroups: () => Promise<void>;
   createGroup: (name: string) => Promise<void>;
+  updateGroup: (groupId: string, name: string) => Promise<void>;
+  deleteGroup: (groupId: string) => Promise<void>;
   selectActiveGroup: (groupId: string) => void;
 };
 
@@ -64,6 +71,39 @@ export function GroupProvider({ children }: PropsWithChildren) {
     }
   }, [token]);
 
+  const updateGroup = useCallback(async (groupId: string, name: string) => {
+    if (!token || !groupId || !name) {
+      throw new Error('Invalid group data');
+    }
+
+    setGroupsError('');
+    try {
+      await updateGroupRequest(token, groupId, name);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update group';
+      setGroupsError(message);
+      throw err;
+    }
+  }, [token]);
+
+  const deleteGroup = useCallback(async (groupId: string) => {
+    if (!token || !groupId) {
+      throw new Error('Invalid group');
+    }
+
+    setGroupsError('');
+    try {
+      await deleteGroupRequest(token, groupId);
+      if (activeGroupId === groupId) {
+        setActiveGroupId(null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete group';
+      setGroupsError(message);
+      throw err;
+    }
+  }, [token, activeGroupId]);
+
   useEffect(() => {
     if (!loggedIn) {
       setGroups([]);
@@ -95,6 +135,8 @@ export function GroupProvider({ children }: PropsWithChildren) {
       activeGroupId,
       fetchGroups,
       createGroup,
+      updateGroup,
+      deleteGroup,
       selectActiveGroup,
     }),
     [
@@ -104,6 +146,8 @@ export function GroupProvider({ children }: PropsWithChildren) {
       activeGroupId,
       fetchGroups,
       createGroup,
+      updateGroup,
+      deleteGroup,
       selectActiveGroup,
     ],
   );

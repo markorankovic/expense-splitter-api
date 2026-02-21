@@ -151,6 +151,55 @@ body {
   gap: 8px;
 }
 
+.groups-list li {
+  display: flex;
+  align-items: center;
+}
+
+.group-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-name {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-actions .button {
+  padding: 8px 10px;
+  font-size: 17px;
+  min-width: 36px;
+  line-height: 1;
+}
+
+.group-edit-form {
+  width: 100%;
+}
+
+.group-edit-form .input {
+  flex: 1;
+}
+
+.group-edit-form .button {
+  padding: 8px 10px;
+  font-size: 17px;
+  min-width: 36px;
+  line-height: 1;
+}
+
 .group-button {
   width: 100%;
   text-align: left;

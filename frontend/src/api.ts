@@ -150,6 +150,36 @@ export const createGroup = async (
   return response.json();
 };
 
+export const updateGroup = async (
+  token: string,
+  groupId: string,
+  name: string,
+): Promise<Group> => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to update group'));
+  }
+  return response.json();
+};
+
+export const deleteGroup = async (token: string, groupId: string) => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to delete group'));
+  }
+  return response.json();
+};
+
 export const addGroupMember = async (
   token: string,
   groupId: string,
