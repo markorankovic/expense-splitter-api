@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ExpensesService } from '../expenses/expenses.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -11,7 +12,10 @@ import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly expensesService: ExpensesService,
+  ) {}
 
   async createGroup(userId: string, dto: CreateGroupDto) {
     return this.prisma.$transaction(async (tx) => {
@@ -210,12 +214,7 @@ export class GroupsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.expenseSplit.deleteMany({
-        where: { expense: { groupId } },
-      });
-      await tx.expense.deleteMany({
-        where: { groupId },
-      });
+      await this.expensesService.deleteAllForGroup(groupId, tx);
       await tx.groupMember.deleteMany({
         where: { groupId },
       });

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { GroupAccessService } from '../common/group-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -201,6 +202,15 @@ export class ExpensesService {
     });
 
     return { ok: true };
+  }
+
+  async deleteAllForGroup(groupId: string, tx: Prisma.TransactionClient = this.prisma) {
+    await tx.expenseSplit.deleteMany({
+      where: { expense: { groupId } },
+    });
+    await tx.expense.deleteMany({
+      where: { groupId },
+    });
   }
 
   private async ensureUsersInGroup(groupId: string, userIds: string[]) {
