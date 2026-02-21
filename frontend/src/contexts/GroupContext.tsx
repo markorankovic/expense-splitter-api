@@ -15,6 +15,7 @@ import {
 } from '../api';
 import type { Group } from '../types';
 import { useAuth } from './AuthContext';
+import { useMe } from './MeContext';
 
 type GroupContextValue = {
   groups: Group[];
@@ -32,10 +33,20 @@ const GroupContext = createContext<GroupContextValue | undefined>(undefined);
 
 export function GroupProvider({ children }: PropsWithChildren) {
   const { token, loggedIn } = useAuth();
+  const { meId } = useMe();
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const orderedGroups = useMemo(
+    () =>
+      [...groups].sort((a, b) => {
+        const aOwned = a.ownerId === meId ? 1 : 0;
+        const bOwned = b.ownerId === meId ? 1 : 0;
+        return bOwned - aOwned;
+      }),
+    [groups, meId],
+  );
 
   const fetchGroups = useCallback(async () => {
     if (!token) {
@@ -114,14 +125,17 @@ export function GroupProvider({ children }: PropsWithChildren) {
   }, [loggedIn]);
 
   useEffect(() => {
-    if (!groups.length) {
+    if (!orderedGroups.length) {
       setActiveGroupId(null);
       return;
     }
-    if (!activeGroupId || !groups.some((group) => group.id === activeGroupId)) {
-      setActiveGroupId(groups[0].id);
+    if (
+      !activeGroupId ||
+      !orderedGroups.some((group) => group.id === activeGroupId)
+    ) {
+      setActiveGroupId(orderedGroups[0].id);
     }
-  }, [groups, activeGroupId]);
+  }, [orderedGroups, activeGroupId]);
 
   const selectActiveGroup = (groupId: string) => {
     setActiveGroupId(groupId);
@@ -129,7 +143,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
 
   const value = useMemo(
     () => ({
-      groups,
+      groups: orderedGroups,
       groupsLoading,
       groupsError,
       activeGroupId,
@@ -140,7 +154,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
       selectActiveGroup,
     }),
     [
-      groups,
+      orderedGroups,
       groupsLoading,
       groupsError,
       activeGroupId,
