@@ -121,7 +121,9 @@ export function GroupProvider({ children }: PropsWithChildren) {
       setGroupsError('');
       setGroupsLoading(false);
       setActiveGroupId(null);
+      return;
     }
+    setActiveGroupId(null);
   }, [loggedIn]);
 
   useEffect(() => {
