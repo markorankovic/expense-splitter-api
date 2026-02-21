@@ -7,7 +7,7 @@ import { useMe } from '../contexts/MeContext';
 import { formatMoney } from '../utils/money';
 
 export function ExpensesPanel() {
-  const { activeGroupId } = useGroups();
+  const { groups, activeGroupId } = useGroups();
   const {
     expenseStatus,
     expensesError,
@@ -38,6 +38,9 @@ export function ExpensesPanel() {
   if (!activeGroupId) {
     return null;
   }
+
+  const activeGroup = groups.find((group) => group.id === activeGroupId) ?? null;
+  const isOwner = activeGroup?.ownerId === meId;
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,11 +125,11 @@ export function ExpensesPanel() {
                 className="button ghost expense-action"
                 aria-label="Delete expense"
                 title={
-                  expense.paidByUserId === meId
+                  expense.paidByUserId === meId || isOwner
                     ? 'Delete expense'
-                    : 'You can only delete your own expenses'
+                    : 'Only payer or group owner can delete this expense'
                 }
-                disabled={expense.paidByUserId !== meId}
+                disabled={expense.paidByUserId !== meId && !isOwner}
                 onClick={() => {
                   void handleDeleteExpense(expense.id);
                 }}

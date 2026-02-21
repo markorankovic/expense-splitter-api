@@ -167,21 +167,6 @@ export class GroupsService {
       throw new BadRequestException('Owner cannot be removed from group');
     }
 
-    const hasExpenseHistory = await this.prisma.expense.findFirst({
-      where: {
-        groupId,
-        OR: [
-          { paidByUserId: memberId },
-          { splits: { some: { userId: memberId } } },
-        ],
-      },
-      select: { id: true },
-    });
-
-    if (hasExpenseHistory) {
-      throw new ConflictException('Cannot remove member with existing expenses.');
-    }
-
     const membership = await this.prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId, userId: memberId } },
       select: { id: true },
@@ -191,8 +176,11 @@ export class GroupsService {
       throw new NotFoundException('Member not found');
     }
 
-    await this.prisma.groupMember.delete({
-      where: { id: membership.id },
+    await this.prisma.$transaction(async (tx) => {
+      await this.expensesService.deleteAllForMemberInGroup(groupId, memberId, tx);
+      await tx.groupMember.delete({
+        where: { id: membership.id },
+      });
     });
 
     return { ok: true };

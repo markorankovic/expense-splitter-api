@@ -184,6 +184,15 @@ export class ExpensesService {
   async deleteExpense(userId: string, groupId: string, expenseId: string) {
     await this.groupAccess.ensureMember(userId, groupId);
 
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { ownerId: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
     const existing = await this.prisma.expense.findFirst({
       where: { id: expenseId, groupId },
       select: { id: true, paidByUserId: true },
@@ -193,8 +202,10 @@ export class ExpensesService {
       throw new NotFoundException('Expense not found');
     }
 
-    if (existing.paidByUserId !== userId) {
-      throw new ForbiddenException('You can only delete your own expenses');
+    if (existing.paidByUserId !== userId && group.ownerId !== userId) {
+      throw new ForbiddenException(
+        'You can only delete your own expenses unless you own the group',
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -215,6 +226,32 @@ export class ExpensesService {
     });
     await tx.expense.deleteMany({
       where: { groupId },
+    });
+  }
+
+  async deleteAllForMemberInGroup(
+    groupId: string,
+    userId: string,
+    tx: Prisma.TransactionClient = this.prisma,
+  ) {
+    const expenses = await tx.expense.findMany({
+      where: {
+        groupId,
+        paidByUserId: userId,
+      },
+      select: { id: true },
+    });
+
+    if (!expenses.length) {
+      return;
+    }
+
+    const expenseIds = expenses.map((expense) => expense.id);
+    await tx.expenseSplit.deleteMany({
+      where: { expenseId: { in: expenseIds } },
+    });
+    await tx.expense.deleteMany({
+      where: { id: { in: expenseIds } },
     });
   }
 
