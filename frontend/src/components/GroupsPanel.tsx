@@ -19,6 +19,11 @@ export function GroupsPanel() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [groupStatus, setGroupStatus] = useState('');
+  const orderedGroups = [...groups].sort((a, b) => {
+    const aOwned = a.ownerId === meId ? 1 : 0;
+    const bOwned = b.ownerId === meId ? 1 : 0;
+    return bOwned - aOwned;
+  });
 
   useEffect(() => {
     void fetchGroups().catch(() => {});
@@ -102,7 +107,7 @@ export function GroupsPanel() {
         <p className="muted">No groups yet.</p>
       ) : (
         <ul className="groups-list">
-          {groups.map((group) => (
+          {orderedGroups.map((group) => (
             <li key={group.id}>
               {editingGroupId === group.id ? (
                 <form onSubmit={handleRename} className="form inline group-edit-form">

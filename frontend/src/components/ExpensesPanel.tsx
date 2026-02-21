@@ -22,6 +22,11 @@ export function ExpensesPanel() {
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
+  const orderedExpenses = [...expenses].sort((a, b) => {
+    const aMine = a.paidByUserId === meId ? 1 : 0;
+    const bMine = b.paidByUserId === meId ? 1 : 0;
+    return bMine - aMine;
+  });
 
   useEffect(() => {
     if (!activeGroupId) {
@@ -103,7 +108,7 @@ export function ExpensesPanel() {
         <p className="muted">No expenses yet.</p>
       ) : (
         <ul className="expenses-list">
-          {expenses.map((expense) => (
+          {orderedExpenses.map((expense) => (
             <li key={expense.id}>
               <div className="expense-content">
                 <div>
