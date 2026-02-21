@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -185,11 +186,15 @@ export class ExpensesService {
 
     const existing = await this.prisma.expense.findFirst({
       where: { id: expenseId, groupId },
-      select: { id: true },
+      select: { id: true, paidByUserId: true },
     });
 
     if (!existing) {
       throw new NotFoundException('Expense not found');
+    }
+
+    if (existing.paidByUserId !== userId) {
+      throw new ForbiddenException('You can only delete your own expenses');
     }
 
     await this.prisma.$transaction(async (tx) => {

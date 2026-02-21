@@ -238,4 +238,19 @@ export const createExpense = async (
   return response.json();
 };
 
+export const deleteExpense = async (
+  token: string,
+  groupId: string,
+  expenseId: string,
+) => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to delete expense'));
+  }
+  return response.json();
+};
+
 export type { MeResponse };

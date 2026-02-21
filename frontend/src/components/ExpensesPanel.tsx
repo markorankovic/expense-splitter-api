@@ -3,13 +3,22 @@ import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
+import { useMe } from '../contexts/MeContext';
 import { formatMoney } from '../utils/money';
 
 export function ExpensesPanel() {
   const { activeGroupId } = useGroups();
-  const { expenseStatus, expensesError, expensesLoading, expenses, fetchExpenses, createExpense } =
-    useExpenses();
+  const {
+    expenseStatus,
+    expensesError,
+    expensesLoading,
+    expenses,
+    fetchExpenses,
+    createExpense,
+    deleteExpense,
+  } = useExpenses();
   const { membersLoading, members, formatMemberLabel } = useMembers();
+  const { meId } = useMe();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
@@ -33,6 +42,16 @@ export function ExpensesPanel() {
       await fetchBalancesAndSettle(activeGroupId).catch(() => {});
       setExpenseDescription('');
       setExpenseAmount('');
+    } catch {
+      return;
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      await deleteExpense(activeGroupId, expenseId);
+      await fetchExpenses(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId).catch(() => {});
     } catch {
       return;
     }
@@ -86,11 +105,29 @@ export function ExpensesPanel() {
         <ul className="expenses-list">
           {expenses.map((expense) => (
             <li key={expense.id}>
-              <div>
-                <p className="expense-name">{expense.description}</p>
-                <p className="muted">Paid by {formatMemberLabel(expense.paidByUserId)}</p>
+              <div className="expense-content">
+                <div>
+                  <p className="expense-name">{expense.description}</p>
+                  <p className="muted">Paid by {formatMemberLabel(expense.paidByUserId)}</p>
+                </div>
+                <span>{formatMoney(expense.amount)}</span>
               </div>
-              <span>{formatMoney(expense.amount)}</span>
+              <button
+                type="button"
+                className="button ghost expense-action"
+                aria-label="Delete expense"
+                title={
+                  expense.paidByUserId === meId
+                    ? 'Delete expense'
+                    : 'You can only delete your own expenses'
+                }
+                disabled={expense.paidByUserId !== meId}
+                onClick={() => {
+                  void handleDeleteExpense(expense.id);
+                }}
+              >
+                🗑
+              </button>
             </li>
           ))}
         </ul>
