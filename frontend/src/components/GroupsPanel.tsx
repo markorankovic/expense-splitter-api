@@ -1,7 +1,9 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
 import { useGroups } from '../contexts/GroupContext';
+import { useMe } from '../contexts/MeContext';
 
 export function GroupsPanel() {
+  const { meId } = useMe();
   const {
     groups,
     groupsLoading,
@@ -142,7 +144,12 @@ export function GroupsPanel() {
                       type="button"
                       className="button ghost"
                       aria-label="Rename group"
-                      title="Rename group"
+                      title={
+                        group.ownerId === meId
+                          ? 'Rename group'
+                          : 'Only the group owner can rename'
+                      }
+                      disabled={group.ownerId !== meId}
                       onClick={() => {
                         setEditingGroupId(group.id);
                         setEditName(group.name);
@@ -154,7 +161,12 @@ export function GroupsPanel() {
                       type="button"
                       className="button ghost"
                       aria-label="Delete group"
-                      title="Delete group"
+                      title={
+                        group.ownerId === meId
+                          ? 'Delete group'
+                          : 'Only the group owner can delete'
+                      }
+                      disabled={group.ownerId !== meId}
                       onClick={() => {
                         void handleDelete(group.id);
                       }}
