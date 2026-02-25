@@ -207,6 +207,37 @@ export class GroupsService {
     return { ok: true };
   }
 
+  async getMember(userId: string, groupId: string, memberId: string) {
+    const hasAccess = await this.prisma.group.findFirst({
+      where: { id: groupId, members: { some: { userId } } },
+      select: { id: true },
+    });
+
+    if (!hasAccess) {
+      throw new NotFoundException('Group not found');
+    }
+
+    const membership = await this.prisma.groupMember.findUnique({
+      where: { groupId_userId: { groupId, userId: memberId } },
+      select: {
+        role: true,
+        createdAt: true,
+        user: { select: { id: true, email: true } },
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('Member not found');
+    }
+
+    return {
+      id: membership.user.id,
+      email: membership.user.email,
+      role: membership.role,
+      joinedAt: membership.createdAt,
+    };
+  }
+
   async updateGroup(userId: string, groupId: string, dto: UpdateGroupDto) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },

@@ -7,7 +7,7 @@ import { PaginationControls } from './PaginationControls';
 
 export function BalancesPanel() {
   const { activeGroupId } = useGroups();
-  const { formatMemberLabel } = useMembers();
+  const { formatMemberLabel, ensureMemberEmails } = useMembers();
   const {
     balancesLoading,
     balancesError,
@@ -32,6 +32,25 @@ export function BalancesPanel() {
     }
     void fetchBalancesAndSettle(activeGroupId, balancePage, settlePage).catch(() => {});
   }, [activeGroupId, balancePage, settlePage, fetchBalancesAndSettle]);
+
+  useEffect(() => {
+    if (!activeGroupId) {
+      return;
+    }
+
+    const userIds = new Set<string>();
+    balances?.balances.forEach((entry) => userIds.add(entry.userId));
+    settle?.transfers.forEach((transfer) => {
+      userIds.add(transfer.fromUserId);
+      userIds.add(transfer.toUserId);
+    });
+
+    if (userIds.size === 0) {
+      return;
+    }
+
+    void ensureMemberEmails(activeGroupId, Array.from(userIds)).catch(() => {});
+  }, [activeGroupId, balances, settle, ensureMemberEmails]);
 
   useEffect(() => {
     setBalancePage(1);

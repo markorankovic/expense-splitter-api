@@ -67,4 +67,13 @@ export class GroupsController {
   ) {
     return this.groupsService.removeMember(req.user.id, id, userId);
   }
+
+  @Get(':id/members/:userId')
+  getMember(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.groupsService.getMember(req.user.id, id, userId);
+  }
 }

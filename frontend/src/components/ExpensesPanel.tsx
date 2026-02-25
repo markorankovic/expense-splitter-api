@@ -22,7 +22,7 @@ export function ExpensesPanel() {
     createExpense,
     deleteExpense,
   } = useExpenses();
-  const { membersLoading, members, formatMemberLabel } = useMembers();
+  const { membersLoading, members, formatMemberLabel, ensureMemberEmails } = useMembers();
   const { meId } = useMe();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
@@ -39,6 +39,14 @@ export function ExpensesPanel() {
     }
     void fetchExpenses(activeGroupId, expensePage).catch(() => {});
   }, [activeGroupId, expensePage, fetchExpenses]);
+
+  useEffect(() => {
+    if (!activeGroupId || orderedExpenses.length === 0) {
+      return;
+    }
+    const paidByUserIds = orderedExpenses.map((expense) => expense.paidByUserId);
+    void ensureMemberEmails(activeGroupId, paidByUserIds).catch(() => {});
+  }, [activeGroupId, orderedExpenses, ensureMemberEmails]);
 
   useEffect(() => {
     setExpensePage(1);

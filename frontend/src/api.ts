@@ -63,6 +63,20 @@ export const fetchGroupMembers = async (
   return response.json();
 };
 
+export const fetchGroupMember = async (
+  token: string,
+  groupId: string,
+  userId: string,
+): Promise<{ id: string; email: string }> => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/members/${userId}`, {
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to load member'));
+  }
+  return response.json();
+};
+
 export const fetchGroupBalances = async (
   token: string,
   groupId: string,
