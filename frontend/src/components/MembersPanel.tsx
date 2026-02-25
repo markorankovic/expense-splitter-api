@@ -8,17 +8,24 @@ import { useMe } from '../contexts/MeContext';
 export function MembersPanel() {
   const { groups, activeGroupId } = useGroups();
   const { meId } = useMe();
-  const { fetchExpenses } = useExpenses();
+  const { expensePage, fetchExpenses } = useExpenses();
   const { membersError, membersLoading, members, fetchMembers, addMember, removeMember } =
     useMembers();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [memberEmail, setMemberEmail] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
+  const [memberPage, setMemberPage] = useState(1);
+  const memberPageSize = 4;
   const orderedMembers = [...members].sort((a, b) => {
     const aIsMe = a.id === meId ? 1 : 0;
     const bIsMe = b.id === meId ? 1 : 0;
     return bIsMe - aIsMe;
   });
+  const memberTotalPages = Math.max(1, Math.ceil(orderedMembers.length / memberPageSize));
+  const paginatedMembers = orderedMembers.slice(
+    (memberPage - 1) * memberPageSize,
+    memberPage * memberPageSize,
+  );
 
   useEffect(() => {
     if (!activeGroupId) {
@@ -26,6 +33,16 @@ export function MembersPanel() {
     }
     void fetchMembers(activeGroupId).catch(() => {});
   }, [activeGroupId, fetchMembers]);
+
+  useEffect(() => {
+    setMemberPage(1);
+  }, [activeGroupId]);
+
+  useEffect(() => {
+    if (memberPage > memberTotalPages) {
+      setMemberPage(memberTotalPages);
+    }
+  }, [memberPage, memberTotalPages]);
 
   if (!activeGroupId) {
     return null;
@@ -56,7 +73,7 @@ export function MembersPanel() {
     try {
       await removeMember(activeGroupId, memberId);
       await fetchMembers(activeGroupId);
-      await fetchExpenses(activeGroupId);
+      await fetchExpenses(activeGroupId, expensePage);
       await fetchBalancesAndSettle(activeGroupId);
       setMemberStatus('Member removed.');
     } catch (err) {
@@ -96,7 +113,7 @@ export function MembersPanel() {
           <p className="muted">No members yet.</p>
         ) : (
           <ul>
-            {orderedMembers.map((member) => (
+            {paginatedMembers.map((member) => (
               <li key={member.id}>
                 <div className="member-email-box">
                   <span className="member-email" title={member.email}>
@@ -126,6 +143,29 @@ export function MembersPanel() {
           </ul>
         )}
       </div>
+      {orderedMembers.length > memberPageSize ? (
+        <div className="pagination">
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => setMemberPage(Math.max(1, memberPage - 1))}
+            disabled={memberPage === 1 || membersLoading}
+          >
+            Prev
+          </button>
+          <span className="muted">
+            Page {memberPage} / {memberTotalPages}
+          </span>
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => setMemberPage(Math.min(memberTotalPages, memberPage + 1))}
+            disabled={memberPage >= memberTotalPages || membersLoading}
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

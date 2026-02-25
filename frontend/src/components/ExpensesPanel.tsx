@@ -13,6 +13,10 @@ export function ExpensesPanel() {
     expensesError,
     expensesLoading,
     expenses,
+    expensePage,
+    expensePageSize,
+    expenseTotal,
+    setExpensePage,
     fetchExpenses,
     createExpense,
     deleteExpense,
@@ -32,8 +36,12 @@ export function ExpensesPanel() {
     if (!activeGroupId) {
       return;
     }
-    void fetchExpenses(activeGroupId).catch(() => {});
-  }, [activeGroupId, fetchExpenses]);
+    void fetchExpenses(activeGroupId, expensePage).catch(() => {});
+  }, [activeGroupId, expensePage, fetchExpenses]);
+
+  useEffect(() => {
+    setExpensePage(1);
+  }, [activeGroupId, setExpensePage]);
 
   if (!activeGroupId) {
     return null;
@@ -46,7 +54,7 @@ export function ExpensesPanel() {
     event.preventDefault();
     try {
       await createExpense(activeGroupId, expenseDescription, expenseAmount);
-      await fetchExpenses(activeGroupId);
+      await fetchExpenses(activeGroupId, expensePage);
       await fetchBalancesAndSettle(activeGroupId).catch(() => {});
       setExpenseDescription('');
       setExpenseAmount('');
@@ -58,7 +66,7 @@ export function ExpensesPanel() {
   const handleDeleteExpense = async (expenseId: string) => {
     try {
       await deleteExpense(activeGroupId, expenseId);
-      await fetchExpenses(activeGroupId);
+      await fetchExpenses(activeGroupId, expensePage);
       await fetchBalancesAndSettle(activeGroupId).catch(() => {});
     } catch {
       return;
@@ -140,6 +148,35 @@ export function ExpensesPanel() {
           ))}
         </ul>
       )}
+      {expenseTotal > expensePageSize ? (
+        <div className="pagination">
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => setExpensePage(Math.max(1, expensePage - 1))}
+            disabled={expensePage === 1 || expensesLoading}
+          >
+            Prev
+          </button>
+          <span className="muted">
+            Page {expensePage} / {Math.max(1, Math.ceil(expenseTotal / expensePageSize))}
+          </span>
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() =>
+              setExpensePage(
+                Math.min(Math.ceil(expenseTotal / expensePageSize), expensePage + 1),
+              )
+            }
+            disabled={
+              expensePage >= Math.ceil(expenseTotal / expensePageSize) || expensesLoading
+            }
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

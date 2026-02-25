@@ -9,10 +9,14 @@ export function GroupsPanel() {
     groupsLoading,
     groupsError,
     activeGroupId,
+    groupPage,
+    groupPageSize,
+    groupTotal,
     fetchGroups,
     createGroup,
     updateGroup,
     deleteGroup,
+    setGroupPage,
     selectActiveGroup,
   } = useGroups();
   const [groupName, setGroupName] = useState('');
@@ -21,8 +25,8 @@ export function GroupsPanel() {
   const [groupStatus, setGroupStatus] = useState('');
 
   useEffect(() => {
-    void fetchGroups().catch(() => {});
-  }, [fetchGroups]);
+    void fetchGroups(groupPage).catch(() => {});
+  }, [fetchGroups, groupPage]);
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,7 +35,7 @@ export function GroupsPanel() {
     }
     try {
       await createGroup(groupName.trim());
-      await fetchGroups();
+      await fetchGroups(groupPage);
       setGroupName('');
       setGroupStatus('Group created.');
     } catch (err) {
@@ -48,7 +52,7 @@ export function GroupsPanel() {
     setGroupStatus('');
     try {
       await updateGroup(editingGroupId, editName.trim());
-      await fetchGroups();
+      await fetchGroups(groupPage);
       setEditingGroupId(null);
       setEditName('');
       setGroupStatus('Group updated.');
@@ -64,7 +68,7 @@ export function GroupsPanel() {
     setGroupStatus('');
     try {
       await deleteGroup(groupId);
-      await fetchGroups();
+      await fetchGroups(groupPage);
       setGroupStatus('Group deleted.');
     } catch (err) {
       setGroupStatus(err instanceof Error ? err.message : 'Failed to delete group');
@@ -180,6 +184,35 @@ export function GroupsPanel() {
           ))}
         </ul>
       )}
+      {groupTotal > groupPageSize ? (
+        <div className="pagination">
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => setGroupPage(Math.max(1, groupPage - 1))}
+            disabled={groupPage === 1 || groupsLoading}
+          >
+            Prev
+          </button>
+          <span className="muted">
+            Page {groupPage} / {Math.max(1, Math.ceil(groupTotal / groupPageSize))}
+          </span>
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() =>
+              setGroupPage(
+                Math.min(Math.ceil(groupTotal / groupPageSize), groupPage + 1),
+              )
+            }
+            disabled={
+              groupPage >= Math.ceil(groupTotal / groupPageSize) || groupsLoading
+            }
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

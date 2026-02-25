@@ -22,10 +22,14 @@ type GroupContextValue = {
   groupsLoading: boolean;
   groupsError: string;
   activeGroupId: string | null;
-  fetchGroups: () => Promise<void>;
+  groupPage: number;
+  groupPageSize: number;
+  groupTotal: number;
+  fetchGroups: (page?: number) => Promise<void>;
   createGroup: (name: string) => Promise<void>;
   updateGroup: (groupId: string, name: string) => Promise<void>;
   deleteGroup: (groupId: string) => Promise<void>;
+  setGroupPage: (page: number) => void;
   selectActiveGroup: (groupId: string) => void;
 };
 
@@ -38,6 +42,9 @@ export function GroupProvider({ children }: PropsWithChildren) {
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [groupPage, setGroupPage] = useState(1);
+  const groupPageSize = 4;
+  const [groupTotal, setGroupTotal] = useState(0);
   const orderedGroups = useMemo(
     () =>
       [...groups].sort((a, b) => {
@@ -48,7 +55,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
     [groups, meId],
   );
 
-  const fetchGroups = useCallback(async () => {
+  const fetchGroups = useCallback(async (page = groupPage) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -56,8 +63,9 @@ export function GroupProvider({ children }: PropsWithChildren) {
     setGroupsError('');
     setGroupsLoading(true);
     try {
-      const data = await fetchGroupsRequest(token, 1, 50);
+      const data = await fetchGroupsRequest(token, page, groupPageSize);
       setGroups(data.items);
+      setGroupTotal(data.total);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load groups';
       setGroupsError(message);
@@ -65,7 +73,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
     } finally {
       setGroupsLoading(false);
     }
-  }, [token]);
+  }, [token, groupPage, groupPageSize]);
 
   const createGroup = useCallback(async (name: string) => {
     if (!token || !name) {
@@ -118,9 +126,11 @@ export function GroupProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!loggedIn) {
       setGroups([]);
+      setGroupTotal(0);
       setGroupsError('');
       setGroupsLoading(false);
       setActiveGroupId(null);
+      setGroupPage(1);
       return;
     }
     setActiveGroupId(null);
@@ -149,10 +159,14 @@ export function GroupProvider({ children }: PropsWithChildren) {
       groupsLoading,
       groupsError,
       activeGroupId,
+      groupPage,
+      groupPageSize,
+      groupTotal,
       fetchGroups,
       createGroup,
       updateGroup,
       deleteGroup,
+      setGroupPage,
       selectActiveGroup,
     }),
     [
@@ -160,10 +174,14 @@ export function GroupProvider({ children }: PropsWithChildren) {
       groupsLoading,
       groupsError,
       activeGroupId,
+      groupPage,
+      groupPageSize,
+      groupTotal,
       fetchGroups,
       createGroup,
       updateGroup,
       deleteGroup,
+      setGroupPage,
       selectActiveGroup,
     ],
   );
