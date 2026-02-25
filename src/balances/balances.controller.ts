@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationDto } from '../common/pagination.dto';
 import { BalancesService } from './balances.service';
 
 type AuthRequest = Request & { user: { id: string; email: string } };
@@ -11,12 +12,20 @@ export class BalancesController {
   constructor(private readonly balancesService: BalancesService) {}
 
   @Get('balances')
-  getBalances(@Req() req: AuthRequest, @Param('groupId') groupId: string) {
-    return this.balancesService.getBalances(req.user.id, groupId);
+  getBalances(
+    @Req() req: AuthRequest,
+    @Param('groupId') groupId: string,
+    @Query() query: PaginationDto,
+  ) {
+    return this.balancesService.getBalances(req.user.id, groupId, query);
   }
 
   @Get('settle')
-  getSettle(@Req() req: AuthRequest, @Param('groupId') groupId: string) {
-    return this.balancesService.getSettle(req.user.id, groupId);
+  getSettle(
+    @Req() req: AuthRequest,
+    @Param('groupId') groupId: string,
+    @Query() query: PaginationDto,
+  ) {
+    return this.balancesService.getSettle(req.user.id, groupId, query);
   }
 }

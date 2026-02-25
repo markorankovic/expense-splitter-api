@@ -36,8 +36,8 @@ export class GroupsController {
   }
 
   @Get(':id')
-  get(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.groupsService.getGroup(req.user.id, id);
+  get(@Req() req: AuthRequest, @Param('id') id: string, @Query() query: PaginationDto) {
+    return this.groupsService.getGroup(req.user.id, id, query);
   }
 
   @Patch(':id')

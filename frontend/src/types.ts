@@ -28,6 +28,9 @@ export type GroupMember = {
 
 export type GroupDetailsResponse = Group & {
   members: GroupMember[];
+  page: number;
+  pageSize: number;
+  total: number;
 };
 
 export type BalanceEntry = {
@@ -38,6 +41,9 @@ export type BalanceEntry = {
 export type BalancesResponse = {
   groupId: string;
   balances: BalanceEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
 };
 
 export type SettleTransfer = {
@@ -49,6 +55,9 @@ export type SettleTransfer = {
 export type SettleResponse = {
   groupId: string;
   transfers: SettleTransfer[];
+  page: number;
+  pageSize: number;
+  total: number;
 };
 
 export type Expense = {

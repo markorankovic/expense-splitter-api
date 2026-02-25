@@ -15,9 +15,13 @@ type MemberContextValue = {
   members: GroupMember[];
   membersLoading: boolean;
   membersError: string;
+  memberPage: number;
+  memberPageSize: number;
+  memberTotal: number;
+  setMemberPage: (page: number) => void;
   memberEmailById: Map<string, string>;
   formatMemberLabel: (memberId: string) => string;
-  fetchMembers: (groupId: string) => Promise<void>;
+  fetchMembers: (groupId: string, page?: number) => Promise<void>;
   addMember: (groupId: string, email: string) => Promise<void>;
   removeMember: (groupId: string, userId: string) => Promise<void>;
 };
@@ -29,6 +33,9 @@ export function MemberProvider({ children }: PropsWithChildren) {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState('');
+  const [memberPage, setMemberPage] = useState(1);
+  const memberPageSize = 4;
+  const [memberTotal, setMemberTotal] = useState(0);
 
   const memberEmailById = useMemo(
     () => new Map(members.map((member) => [member.id, member.email])),
@@ -40,7 +47,7 @@ export function MemberProvider({ children }: PropsWithChildren) {
     [memberEmailById],
   );
 
-  const fetchMembers = useCallback(async (groupId: string) => {
+  const fetchMembers = useCallback(async (groupId: string, page = memberPage) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -48,8 +55,9 @@ export function MemberProvider({ children }: PropsWithChildren) {
     setMembersError('');
     setMembersLoading(true);
     try {
-      const data = await fetchGroupMembers(token, groupId);
+      const data = await fetchGroupMembers(token, groupId, page, memberPageSize);
       setMembers(data.members);
+      setMemberTotal(data.total);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load members';
       setMembersError(message);
@@ -57,7 +65,7 @@ export function MemberProvider({ children }: PropsWithChildren) {
     } finally {
       setMembersLoading(false);
     }
-  }, [token]);
+  }, [token, memberPage, memberPageSize]);
 
   const addMember = useCallback(async (groupId: string, email: string) => {
     if (!token || !groupId || !email) {
@@ -86,6 +94,8 @@ export function MemberProvider({ children }: PropsWithChildren) {
       setMembers([]);
       setMembersError('');
       setMembersLoading(false);
+      setMemberPage(1);
+      setMemberTotal(0);
     }
   }, [loggedIn]);
 
@@ -94,6 +104,10 @@ export function MemberProvider({ children }: PropsWithChildren) {
       members,
       membersLoading,
       membersError,
+      memberPage,
+      memberPageSize,
+      memberTotal,
+      setMemberPage,
       memberEmailById,
       formatMemberLabel,
       fetchMembers,
@@ -104,6 +118,10 @@ export function MemberProvider({ children }: PropsWithChildren) {
       members,
       membersLoading,
       membersError,
+      memberPage,
+      memberPageSize,
+      memberTotal,
+      setMemberPage,
       memberEmailById,
       formatMemberLabel,
       fetchMembers,

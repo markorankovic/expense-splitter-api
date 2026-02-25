@@ -9,7 +9,7 @@ export class BalancesService {
     private readonly groupAccess: GroupAccessService,
   ) {}
 
-  async getBalances(userId: string, groupId: string) {
+  private async computeAllBalances(userId: string, groupId: string) {
     await this.groupAccess.ensureMember(userId, groupId);
 
     const members = await this.prisma.groupMember.findMany({
@@ -41,17 +41,42 @@ export class BalancesService {
       }
     }
 
+    return members.map((member) => ({
+      userId: member.userId,
+      balance: balances.get(member.userId) ?? 0,
+    }));
+  }
+
+  async getBalances(
+    userId: string,
+    groupId: string,
+    pagination?: { page?: number; pageSize?: number },
+  ) {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+    const balances = (await this.computeAllBalances(userId, groupId)).filter(
+      (entry) => entry.balance !== 0,
+    );
+
     return {
       groupId,
-      balances: members.map((member) => ({
-        userId: member.userId,
-        balance: balances.get(member.userId) ?? 0,
-      })),
+      balances: balances.slice(skip, skip + pageSize),
+      page,
+      pageSize,
+      total: balances.length,
     };
   }
 
-  async getSettle(userId: string, groupId: string) {
-    const { balances } = await this.getBalances(userId, groupId);
+  async getSettle(
+    userId: string,
+    groupId: string,
+    pagination?: { page?: number; pageSize?: number },
+  ) {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+    const balances = await this.computeAllBalances(userId, groupId);
 
     const creditors = balances
       .filter((entry) => entry.balance > 0)
@@ -89,6 +114,12 @@ export class BalancesService {
       }
     }
 
-    return { groupId, transfers };
+    return {
+      groupId,
+      transfers: transfers.slice(skip, skip + pageSize),
+      page,
+      pageSize,
+      total: transfers.length,
+    };
   }
 }

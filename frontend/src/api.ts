@@ -48,10 +48,15 @@ export const fetchGroups = async (
 export const fetchGroupMembers = async (
   token: string,
   groupId: string,
+  page = 1,
+  pageSize = 50,
 ): Promise<GroupDetailsResponse> => {
-  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
-    headers: authHeaders(token),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/groups/${groupId}?page=${page}&pageSize=${pageSize}`,
+    {
+      headers: authHeaders(token),
+    },
+  );
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, 'Failed to load members'));
   }
@@ -61,10 +66,15 @@ export const fetchGroupMembers = async (
 export const fetchGroupBalances = async (
   token: string,
   groupId: string,
+  page = 1,
+  pageSize = 50,
 ): Promise<BalancesResponse> => {
-  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/balances`, {
-    headers: authHeaders(token),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/groups/${groupId}/balances?page=${page}&pageSize=${pageSize}`,
+    {
+      headers: authHeaders(token),
+    },
+  );
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, 'Failed to load balances'));
   }
@@ -74,10 +84,15 @@ export const fetchGroupBalances = async (
 export const fetchGroupSettle = async (
   token: string,
   groupId: string,
+  page = 1,
+  pageSize = 50,
 ): Promise<SettleResponse> => {
-  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/settle`, {
-    headers: authHeaders(token),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/groups/${groupId}/settle?page=${page}&pageSize=${pageSize}`,
+    {
+      headers: authHeaders(token),
+    },
+  );
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, 'Failed to load balances'));
   }

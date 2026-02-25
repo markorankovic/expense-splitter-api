@@ -60,7 +60,15 @@ export class GroupsService {
     return { items, page, pageSize, total };
   }
 
-  async getGroup(userId: string, groupId: string) {
+  async getGroup(
+    userId: string,
+    groupId: string,
+    pagination?: { page?: number; pageSize?: number },
+  ) {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
     const group = await this.prisma.group.findFirst({
       where: { id: groupId, members: { some: { userId } } },
       select: {
@@ -68,13 +76,6 @@ export class GroupsService {
         name: true,
         createdAt: true,
         ownerId: true,
-        members: {
-          select: {
-            role: true,
-            createdAt: true,
-            user: { select: { id: true, email: true } },
-          },
-        },
       },
     });
 
@@ -82,17 +83,37 @@ export class GroupsService {
       throw new NotFoundException('Group not found');
     }
 
+    const [members, total] = await this.prisma.$transaction([
+      this.prisma.groupMember.findMany({
+        where: { groupId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        select: {
+          role: true,
+          createdAt: true,
+          user: { select: { id: true, email: true } },
+        },
+      }),
+      this.prisma.groupMember.count({
+        where: { groupId },
+      }),
+    ]);
+
     return {
       id: group.id,
       name: group.name,
       createdAt: group.createdAt,
       ownerId: group.ownerId,
-      members: group.members.map((member) => ({
+      members: members.map((member) => ({
         id: member.user.id,
         email: member.user.email,
         role: member.role,
         joinedAt: member.createdAt,
       })),
+      page,
+      pageSize,
+      total,
     };
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
@@ -12,39 +12,25 @@ export function BalancesPanel() {
     balancesError,
     balances,
     settle,
+    balancePage,
+    settlePage,
+    balancePageSize,
+    settlePageSize,
+    balanceTotal,
+    settleTotal,
+    setBalancePage,
+    setSettlePage,
     fetchBalancesAndSettle,
   } = useBalancesAndSettle();
-  const [balancePage, setBalancePage] = useState(1);
-  const [settlePage, setSettlePage] = useState(1);
-  const balancePageSize = 4;
-  const settlePageSize = 4;
-  const nonZeroBalances = useMemo(
-    () => balances?.balances.filter((entry) => entry.balance !== 0) ?? [],
-    [balances],
-  );
-  const balanceTotalPages = Math.max(
-    1,
-    Math.ceil(nonZeroBalances.length / balancePageSize),
-  );
-  const settleTotalPages = Math.max(
-    1,
-    Math.ceil((settle?.transfers.length ?? 0) / settlePageSize),
-  );
-  const paginatedBalances = nonZeroBalances.slice(
-    (balancePage - 1) * balancePageSize,
-    balancePage * balancePageSize,
-  );
-  const paginatedTransfers = (settle?.transfers ?? []).slice(
-    (settlePage - 1) * settlePageSize,
-    settlePage * settlePageSize,
-  );
+  const balanceTotalPages = Math.max(1, Math.ceil(balanceTotal / balancePageSize));
+  const settleTotalPages = Math.max(1, Math.ceil(settleTotal / settlePageSize));
 
   useEffect(() => {
     if (!activeGroupId) {
       return;
     }
-    void fetchBalancesAndSettle(activeGroupId).catch(() => {});
-  }, [activeGroupId, fetchBalancesAndSettle]);
+    void fetchBalancesAndSettle(activeGroupId, balancePage, settlePage).catch(() => {});
+  }, [activeGroupId, balancePage, settlePage, fetchBalancesAndSettle]);
 
   useEffect(() => {
     setBalancePage(1);
@@ -75,7 +61,7 @@ export function BalancesPanel() {
           type="button"
           className="button ghost"
           onClick={() => {
-            void fetchBalancesAndSettle(activeGroupId).catch(() => {});
+            void fetchBalancesAndSettle(activeGroupId, balancePage, settlePage).catch(() => {});
           }}
           disabled={balancesLoading}
         >
@@ -85,10 +71,10 @@ export function BalancesPanel() {
       {balancesError ? <p className="error">{balancesError}</p> : null}
       {balances ? (
         <ul className="balances-list">
-          {nonZeroBalances.length === 0 ? (
+          {balances.balances.length === 0 ? (
             <li className="muted">No balances yet.</li>
           ) : (
-            paginatedBalances.map((entry) => (
+            balances.balances.map((entry) => (
               <li key={entry.userId}>
                 <span>{formatMemberLabel(entry.userId)}</span>
                 <span>{formatMoney(entry.balance)}</span>
@@ -99,7 +85,7 @@ export function BalancesPanel() {
       ) : (
         <p className="muted">No balances yet.</p>
       )}
-      {nonZeroBalances.length > balancePageSize ? (
+      {balanceTotal > balancePageSize ? (
         <div className="pagination">
           <button
             type="button"
@@ -129,7 +115,7 @@ export function BalancesPanel() {
           {settle.transfers.length === 0 ? (
             <li className="muted">No transfers needed.</li>
           ) : (
-            paginatedTransfers.map((transfer, index) => (
+            settle.transfers.map((transfer, index) => (
               <li key={`${transfer.fromUserId}-${transfer.toUserId}-${index}`}>
                 <span>
                   {formatMemberLabel(transfer.fromUserId)} →{' '}
@@ -143,7 +129,7 @@ export function BalancesPanel() {
       ) : (
         <p className="muted">No settlements yet.</p>
       )}
-      {settle && settle.transfers.length > settlePageSize ? (
+      {settle && settleTotal > settlePageSize ? (
         <div className="pagination">
           <button
             type="button"
