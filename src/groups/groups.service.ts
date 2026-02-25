@@ -1,16 +1,22 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ExpensesService } from '../expenses/expenses.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly expensesService: ExpensesService,
+  ) {}
 
   async createGroup(userId: string, dto: CreateGroupDto) {
     return this.prisma.$transaction(async (tx) => {
@@ -157,6 +163,10 @@ export class GroupsService {
       throw new ForbiddenException('Only owner can remove members');
     }
 
+    if (memberId === group.ownerId) {
+      throw new BadRequestException('Owner cannot be removed from group');
+    }
+
     const membership = await this.prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId, userId: memberId } },
       select: { id: true },
@@ -166,8 +176,59 @@ export class GroupsService {
       throw new NotFoundException('Member not found');
     }
 
-    await this.prisma.groupMember.delete({
-      where: { id: membership.id },
+    await this.prisma.$transaction(async (tx) => {
+      await this.expensesService.deleteAllForMemberInGroup(groupId, memberId, tx);
+      await tx.groupMember.delete({
+        where: { id: membership.id },
+      });
+    });
+
+    return { ok: true };
+  }
+
+  async updateGroup(userId: string, groupId: string, dto: UpdateGroupDto) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    if (group.ownerId !== userId) {
+      throw new ForbiddenException('Only owner can update group');
+    }
+
+    return this.prisma.group.update({
+      where: { id: groupId },
+      data: { name: dto.name },
+      select: { id: true, name: true, createdAt: true, ownerId: true },
+    });
+  }
+
+  async deleteGroup(userId: string, groupId: string) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    if (group.ownerId !== userId) {
+      throw new ForbiddenException('Only owner can delete group');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.expensesService.deleteAllForGroup(groupId, tx);
+      await tx.groupMember.deleteMany({
+        where: { groupId },
+      });
+      await tx.group.delete({
+        where: { id: groupId },
+      });
     });
 
     return { ok: true };

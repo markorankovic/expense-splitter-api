@@ -1,14 +1,24 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
 import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
+import { useExpenses } from '../contexts/ExpenseContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
+import { useMe } from '../contexts/MeContext';
 
 export function MembersPanel() {
-  const { activeGroupId } = useGroups();
-  const { membersError, membersLoading, members, fetchMembers, addMember } = useMembers();
+  const { groups, activeGroupId } = useGroups();
+  const { meId } = useMe();
+  const { fetchExpenses } = useExpenses();
+  const { membersError, membersLoading, members, fetchMembers, addMember, removeMember } =
+    useMembers();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [memberEmail, setMemberEmail] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
+  const orderedMembers = [...members].sort((a, b) => {
+    const aIsMe = a.id === meId ? 1 : 0;
+    const bIsMe = b.id === meId ? 1 : 0;
+    return bIsMe - aIsMe;
+  });
 
   useEffect(() => {
     if (!activeGroupId) {
@@ -20,6 +30,9 @@ export function MembersPanel() {
   if (!activeGroupId) {
     return null;
   }
+
+  const activeGroup = groups.find((group) => group.id === activeGroupId) ?? null;
+  const canManageMembers = activeGroup?.ownerId === meId;
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -35,6 +48,19 @@ export function MembersPanel() {
       setMemberEmail('');
     } catch (err) {
       setMemberStatus(err instanceof Error ? err.message : 'Failed to add member');
+    }
+  };
+
+  const handleRemove = async (memberId: string) => {
+    setMemberStatus('');
+    try {
+      await removeMember(activeGroupId, memberId);
+      await fetchMembers(activeGroupId);
+      await fetchExpenses(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId);
+      setMemberStatus('Member removed.');
+    } catch (err) {
+      setMemberStatus(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
@@ -70,9 +96,31 @@ export function MembersPanel() {
           <p className="muted">No members yet.</p>
         ) : (
           <ul>
-            {members.map((member) => (
+            {orderedMembers.map((member) => (
               <li key={member.id}>
-                <span className="member-email">{member.email}</span>
+                <div className="member-email-box">
+                  <span className="member-email" title={member.email}>
+                    {member.email}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="button ghost member-action"
+                  aria-label="Remove member"
+                  title={
+                    !canManageMembers
+                      ? 'Only the group owner can remove members'
+                      : member.id === meId
+                        ? 'You cannot remove yourself'
+                        : 'Remove member'
+                  }
+                  disabled={!canManageMembers || member.id === meId}
+                  onClick={() => {
+                    void handleRemove(member.id);
+                  }}
+                >
+                  🗑
+                </button>
               </li>
             ))}
           </ul>

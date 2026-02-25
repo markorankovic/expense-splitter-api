@@ -7,7 +7,11 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { createExpense as createExpenseRequest, fetchExpenses as fetchExpensesRequest } from '../api';
+import {
+  createExpense as createExpenseRequest,
+  deleteExpense as deleteExpenseRequest,
+  fetchExpenses as fetchExpensesRequest,
+} from '../api';
 import type { Expense } from '../types';
 import { gbpToPence } from '../utils/money';
 import { useAuth } from './AuthContext';
@@ -25,6 +29,7 @@ type ExpenseContextValue = {
     description: string,
     amountInput: string,
   ) => Promise<void>;
+  deleteExpense: (groupId: string, expenseId: string) => Promise<void>;
 };
 
 const ExpenseContext = createContext<ExpenseContextValue | undefined>(undefined);
@@ -94,6 +99,22 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
     }
   }, [token, meId, members]);
 
+  const deleteExpense = useCallback(async (groupId: string, expenseId: string) => {
+    if (!token || !groupId || !expenseId) {
+      throw new Error('Invalid expense');
+    }
+
+    setExpenseStatus('');
+    try {
+      await deleteExpenseRequest(token, groupId, expenseId);
+      setExpenseStatus('Expense deleted.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete expense';
+      setExpenseStatus(message);
+      throw err;
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!loggedIn) {
       setExpenses([]);
@@ -111,6 +132,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       expenseStatus,
       fetchExpenses,
       createExpense,
+      deleteExpense,
     }),
     [
       expenses,
@@ -119,6 +141,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       expenseStatus,
       fetchExpenses,
       createExpense,
+      deleteExpense,
     ],
   );
 

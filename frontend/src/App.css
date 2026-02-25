@@ -151,6 +151,55 @@ body {
   gap: 8px;
 }
 
+.groups-list li {
+  display: flex;
+  align-items: center;
+}
+
+.group-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-name {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-actions .button {
+  padding: 8px 10px;
+  font-size: 17px;
+  min-width: 36px;
+  line-height: 1;
+}
+
+.group-edit-form {
+  width: 100%;
+}
+
+.group-edit-form .input {
+  flex: 1;
+}
+
+.group-edit-form .button {
+  padding: 8px 10px;
+  font-size: 17px;
+  min-width: 36px;
+  line-height: 1;
+}
+
 .group-button {
   width: 100%;
   text-align: left;
@@ -186,17 +235,34 @@ body {
 
 .members-list li {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: #f6f4f2;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
 }
 
+.member-email-box {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f6f4f2;
+}
+
 .member-email {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 14px;
   color: #1c1c1c;
+}
+
+.member-action {
+  padding: 8px 10px;
+  font-size: 17px;
+  min-width: 36px;
+  line-height: 1;
 }
 
 .expense-card {
@@ -219,18 +285,33 @@ body {
 .expenses-list li {
   display: flex;
   align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.expense-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 8px 10px;
   border-radius: 10px;
   background: #f6f4f2;
-  font-size: 14px;
 }
 
 .expense-name {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
+}
+
+.expense-action {
+  padding: 8px 10px;
+  font-size: 17px;
+  min-width: 36px;
+  line-height: 1;
 }
 
 .balances-card {

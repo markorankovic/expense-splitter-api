@@ -150,6 +150,36 @@ export const createGroup = async (
   return response.json();
 };
 
+export const updateGroup = async (
+  token: string,
+  groupId: string,
+  name: string,
+): Promise<Group> => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to update group'));
+  }
+  return response.json();
+};
+
+export const deleteGroup = async (token: string, groupId: string) => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to delete group'));
+  }
+  return response.json();
+};
+
 export const addGroupMember = async (
   token: string,
   groupId: string,
@@ -165,6 +195,21 @@ export const addGroupMember = async (
   });
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, 'Failed to add member'));
+  }
+  return response.json();
+};
+
+export const removeGroupMember = async (
+  token: string,
+  groupId: string,
+  userId: string,
+) => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/members/${userId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to remove member'));
   }
   return response.json();
 };
@@ -189,6 +234,21 @@ export const createExpense = async (
   });
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, 'Failed to add expense'));
+  }
+  return response.json();
+};
+
+export const deleteExpense = async (
+  token: string,
+  groupId: string,
+  expenseId: string,
+) => {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, 'Failed to delete expense'));
   }
   return response.json();
 };

@@ -3,16 +3,30 @@ import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
+import { useMe } from '../contexts/MeContext';
 import { formatMoney } from '../utils/money';
 
 export function ExpensesPanel() {
-  const { activeGroupId } = useGroups();
-  const { expenseStatus, expensesError, expensesLoading, expenses, fetchExpenses, createExpense } =
-    useExpenses();
+  const { groups, activeGroupId } = useGroups();
+  const {
+    expenseStatus,
+    expensesError,
+    expensesLoading,
+    expenses,
+    fetchExpenses,
+    createExpense,
+    deleteExpense,
+  } = useExpenses();
   const { membersLoading, members, formatMemberLabel } = useMembers();
+  const { meId } = useMe();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
+  const orderedExpenses = [...expenses].sort((a, b) => {
+    const aMine = a.paidByUserId === meId ? 1 : 0;
+    const bMine = b.paidByUserId === meId ? 1 : 0;
+    return bMine - aMine;
+  });
 
   useEffect(() => {
     if (!activeGroupId) {
@@ -25,6 +39,9 @@ export function ExpensesPanel() {
     return null;
   }
 
+  const activeGroup = groups.find((group) => group.id === activeGroupId) ?? null;
+  const isOwner = activeGroup?.ownerId === meId;
+
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
@@ -33,6 +50,16 @@ export function ExpensesPanel() {
       await fetchBalancesAndSettle(activeGroupId).catch(() => {});
       setExpenseDescription('');
       setExpenseAmount('');
+    } catch {
+      return;
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      await deleteExpense(activeGroupId, expenseId);
+      await fetchExpenses(activeGroupId);
+      await fetchBalancesAndSettle(activeGroupId).catch(() => {});
     } catch {
       return;
     }
@@ -84,13 +111,31 @@ export function ExpensesPanel() {
         <p className="muted">No expenses yet.</p>
       ) : (
         <ul className="expenses-list">
-          {expenses.map((expense) => (
+          {orderedExpenses.map((expense) => (
             <li key={expense.id}>
-              <div>
-                <p className="expense-name">{expense.description}</p>
-                <p className="muted">Paid by {formatMemberLabel(expense.paidByUserId)}</p>
+              <div className="expense-content">
+                <div>
+                  <p className="expense-name">{expense.description}</p>
+                  <p className="muted">Paid by {formatMemberLabel(expense.paidByUserId)}</p>
+                </div>
+                <span>{formatMoney(expense.amount)}</span>
               </div>
-              <span>{formatMoney(expense.amount)}</span>
+              <button
+                type="button"
+                className="button ghost expense-action"
+                aria-label="Delete expense"
+                title={
+                  expense.paidByUserId === meId || isOwner
+                    ? 'Delete expense'
+                    : 'Only payer or group owner can delete this expense'
+                }
+                disabled={expense.paidByUserId !== meId && !isOwner}
+                onClick={() => {
+                  void handleDeleteExpense(expense.id);
+                }}
+              >
+                🗑
+              </button>
             </li>
           ))}
         </ul>

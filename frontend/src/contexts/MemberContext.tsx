@@ -7,7 +7,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { addGroupMember, fetchGroupMembers } from '../api';
+import { addGroupMember, fetchGroupMembers, removeGroupMember } from '../api';
 import type { GroupMember } from '../types';
 import { useAuth } from './AuthContext';
 
@@ -19,6 +19,7 @@ type MemberContextValue = {
   formatMemberLabel: (memberId: string) => string;
   fetchMembers: (groupId: string) => Promise<void>;
   addMember: (groupId: string, email: string) => Promise<void>;
+  removeMember: (groupId: string, userId: string) => Promise<void>;
 };
 
 const MemberContext = createContext<MemberContextValue | undefined>(undefined);
@@ -62,14 +63,21 @@ export function MemberProvider({ children }: PropsWithChildren) {
     if (!token || !groupId || !email) {
       throw new Error('Invalid member email');
     }
-
-    setMembersError('');
     try {
       await addGroupMember(token, groupId, email);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add member';
-      setMembersError(message);
-      throw err;
+      throw new Error(err instanceof Error ? err.message : 'Failed to add member');
+    }
+  }, [token]);
+
+  const removeMember = useCallback(async (groupId: string, userId: string) => {
+    if (!token || !groupId || !userId) {
+      throw new Error('Invalid member');
+    }
+    try {
+      await removeGroupMember(token, groupId, userId);
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : 'Failed to remove member');
     }
   }, [token]);
 
@@ -90,6 +98,7 @@ export function MemberProvider({ children }: PropsWithChildren) {
       formatMemberLabel,
       fetchMembers,
       addMember,
+      removeMember,
     }),
     [
       members,
@@ -99,6 +108,7 @@ export function MemberProvider({ children }: PropsWithChildren) {
       formatMemberLabel,
       fetchMembers,
       addMember,
+      removeMember,
     ],
   );
 

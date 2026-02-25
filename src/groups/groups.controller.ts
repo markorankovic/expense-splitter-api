@@ -1,9 +1,21 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationDto } from '../common/pagination.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupsService } from './groups.service';
 
 type AuthRequest = Request & { user: { id: string; email: string } };
@@ -26,6 +38,16 @@ export class GroupsController {
   @Get(':id')
   get(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.groupsService.getGroup(req.user.id, id);
+  }
+
+  @Patch(':id')
+  update(@Req() req: AuthRequest, @Param('id') id: string, @Body() dto: UpdateGroupDto) {
+    return this.groupsService.updateGroup(req.user.id, id, dto);
+  }
+
+  @Delete(':id')
+  delete(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.groupsService.deleteGroup(req.user.id, id);
   }
 
   @Post(':id/members')
