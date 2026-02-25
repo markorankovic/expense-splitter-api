@@ -3,6 +3,7 @@ import { useBalancesAndSettle } from '../contexts/BalancesAndSettleContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
 import { formatMoney } from '../utils/money';
+import { PaginationControls } from './PaginationControls';
 
 export function BalancesPanel() {
   const { activeGroupId } = useGroups();
@@ -85,29 +86,13 @@ export function BalancesPanel() {
       ) : (
         <p className="muted">No balances yet.</p>
       )}
-      {balanceTotal > balancePageSize ? (
-        <div className="pagination">
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setBalancePage(Math.max(1, balancePage - 1))}
-            disabled={balancePage === 1 || balancesLoading}
-          >
-            Prev
-          </button>
-          <span className="muted">
-            Page {balancePage} / {balanceTotalPages}
-          </span>
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setBalancePage(Math.min(balanceTotalPages, balancePage + 1))}
-            disabled={balancePage >= balanceTotalPages || balancesLoading}
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <PaginationControls
+        currentPage={balancePage}
+        pageSize={balancePageSize}
+        totalItems={balanceTotal}
+        loading={balancesLoading}
+        onPageChange={setBalancePage}
+      />
 
       <h2 className="subtitle">Settle</h2>
       {settle ? (
@@ -129,29 +114,13 @@ export function BalancesPanel() {
       ) : (
         <p className="muted">No settlements yet.</p>
       )}
-      {settle && settleTotal > settlePageSize ? (
-        <div className="pagination">
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setSettlePage(Math.max(1, settlePage - 1))}
-            disabled={settlePage === 1 || balancesLoading}
-          >
-            Prev
-          </button>
-          <span className="muted">
-            Page {settlePage} / {settleTotalPages}
-          </span>
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setSettlePage(Math.min(settleTotalPages, settlePage + 1))}
-            disabled={settlePage >= settleTotalPages || balancesLoading}
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <PaginationControls
+        currentPage={settlePage}
+        pageSize={settlePageSize}
+        totalItems={settleTotal}
+        loading={balancesLoading}
+        onPageChange={setSettlePage}
+      />
     </div>
   );
 }

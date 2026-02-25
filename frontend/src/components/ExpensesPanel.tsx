@@ -5,6 +5,7 @@ import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
 import { useMe } from '../contexts/MeContext';
 import { formatMoney } from '../utils/money';
+import { PaginationControls } from './PaginationControls';
 
 export function ExpensesPanel() {
   const { groups, activeGroupId } = useGroups();
@@ -148,35 +149,13 @@ export function ExpensesPanel() {
           ))}
         </ul>
       )}
-      {expenseTotal > expensePageSize ? (
-        <div className="pagination">
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setExpensePage(Math.max(1, expensePage - 1))}
-            disabled={expensePage === 1 || expensesLoading}
-          >
-            Prev
-          </button>
-          <span className="muted">
-            Page {expensePage} / {Math.max(1, Math.ceil(expenseTotal / expensePageSize))}
-          </span>
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() =>
-              setExpensePage(
-                Math.min(Math.ceil(expenseTotal / expensePageSize), expensePage + 1),
-              )
-            }
-            disabled={
-              expensePage >= Math.ceil(expenseTotal / expensePageSize) || expensesLoading
-            }
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <PaginationControls
+        currentPage={expensePage}
+        pageSize={expensePageSize}
+        totalItems={expenseTotal}
+        loading={expensesLoading}
+        onPageChange={setExpensePage}
+      />
     </div>
   );
 }

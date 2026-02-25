@@ -1,4 +1,5 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
+import { PaginationControls } from './PaginationControls';
 import { useGroups } from '../contexts/GroupContext';
 import { useMe } from '../contexts/MeContext';
 
@@ -184,35 +185,13 @@ export function GroupsPanel() {
           ))}
         </ul>
       )}
-      {groupTotal > groupPageSize ? (
-        <div className="pagination">
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setGroupPage(Math.max(1, groupPage - 1))}
-            disabled={groupPage === 1 || groupsLoading}
-          >
-            Prev
-          </button>
-          <span className="muted">
-            Page {groupPage} / {Math.max(1, Math.ceil(groupTotal / groupPageSize))}
-          </span>
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() =>
-              setGroupPage(
-                Math.min(Math.ceil(groupTotal / groupPageSize), groupPage + 1),
-              )
-            }
-            disabled={
-              groupPage >= Math.ceil(groupTotal / groupPageSize) || groupsLoading
-            }
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <PaginationControls
+        currentPage={groupPage}
+        pageSize={groupPageSize}
+        totalItems={groupTotal}
+        loading={groupsLoading}
+        onPageChange={setGroupPage}
+      />
     </div>
   );
 }

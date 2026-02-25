@@ -4,6 +4,7 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
 import { useMe } from '../contexts/MeContext';
+import { PaginationControls } from './PaginationControls';
 
 export function MembersPanel() {
   const { groups, activeGroupId } = useGroups();
@@ -147,29 +148,13 @@ export function MembersPanel() {
           </ul>
         )}
       </div>
-      {memberTotal > memberPageSize ? (
-        <div className="pagination">
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setMemberPage(Math.max(1, memberPage - 1))}
-            disabled={memberPage === 1 || membersLoading}
-          >
-            Prev
-          </button>
-          <span className="muted">
-            Page {memberPage} / {memberTotalPages}
-          </span>
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => setMemberPage(Math.min(memberTotalPages, memberPage + 1))}
-            disabled={memberPage >= memberTotalPages || membersLoading}
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
+      <PaginationControls
+        currentPage={memberPage}
+        pageSize={memberPageSize}
+        totalItems={memberTotal}
+        loading={membersLoading}
+        onPageChange={setMemberPage}
+      />
     </div>
   );
 }
