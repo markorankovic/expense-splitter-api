@@ -45,22 +45,31 @@ export class GroupsService {
     const pageSize = pagination?.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
     const where = { members: { some: { userId } } };
-
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.group.findMany({
-        where,
-        select: { id: true, name: true, createdAt: true, ownerId: true },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-      }),
-      this.prisma.group.count({ where }),
-    ]);
+    const allGroups = await this.prisma.group.findMany({
+      where,
+      select: { id: true, name: true, createdAt: true, ownerId: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const sorted = allGroups.sort((a, b) => {
+      const aOwned = a.ownerId === userId ? 1 : 0;
+      const bOwned = b.ownerId === userId ? 1 : 0;
+      return bOwned - aOwned;
+    });
+    const total = sorted.length;
+    const items = sorted.slice(skip, skip + pageSize);
 
     return { items, page, pageSize, total };
   }
 
-  async getGroup(userId: string, groupId: string) {
+  async getGroup(
+    userId: string,
+    groupId: string,
+    pagination?: { page?: number; pageSize?: number },
+  ) {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
     const group = await this.prisma.group.findFirst({
       where: { id: groupId, members: { some: { userId } } },
       select: {
@@ -68,13 +77,6 @@ export class GroupsService {
         name: true,
         createdAt: true,
         ownerId: true,
-        members: {
-          select: {
-            role: true,
-            createdAt: true,
-            user: { select: { id: true, email: true } },
-          },
-        },
       },
     });
 
@@ -82,17 +84,37 @@ export class GroupsService {
       throw new NotFoundException('Group not found');
     }
 
+    const allMembers = await this.prisma.groupMember.findMany({
+      where: { groupId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        role: true,
+        createdAt: true,
+        user: { select: { id: true, email: true } },
+      },
+    });
+    const sortedMembers = allMembers.sort((a, b) => {
+      const aIsMe = a.user.id === userId ? 1 : 0;
+      const bIsMe = b.user.id === userId ? 1 : 0;
+      return bIsMe - aIsMe;
+    });
+    const total = sortedMembers.length;
+    const members = sortedMembers.slice(skip, skip + pageSize);
+
     return {
       id: group.id,
       name: group.name,
       createdAt: group.createdAt,
       ownerId: group.ownerId,
-      members: group.members.map((member) => ({
+      members: members.map((member) => ({
         id: member.user.id,
         email: member.user.email,
         role: member.role,
         joinedAt: member.createdAt,
       })),
+      page,
+      pageSize,
+      total,
     };
   }
 
@@ -184,6 +206,37 @@ export class GroupsService {
     });
 
     return { ok: true };
+  }
+
+  async getMember(userId: string, groupId: string, memberId: string) {
+    const hasAccess = await this.prisma.group.findFirst({
+      where: { id: groupId, members: { some: { userId } } },
+      select: { id: true },
+    });
+
+    if (!hasAccess) {
+      throw new NotFoundException('Group not found');
+    }
+
+    const membership = await this.prisma.groupMember.findUnique({
+      where: { groupId_userId: { groupId, userId: memberId } },
+      select: {
+        role: true,
+        createdAt: true,
+        user: { select: { id: true, email: true } },
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('Member not found');
+    }
+
+    return {
+      id: membership.user.id,
+      email: membership.user.email,
+      role: membership.role,
+      joinedAt: membership.createdAt,
+    };
   }
 
   async updateGroup(userId: string, groupId: string, dto: UpdateGroupDto) {

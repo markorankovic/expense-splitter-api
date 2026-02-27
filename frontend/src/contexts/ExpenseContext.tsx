@@ -23,7 +23,11 @@ type ExpenseContextValue = {
   expensesLoading: boolean;
   expensesError: string;
   expenseStatus: string;
-  fetchExpenses: (groupId: string) => Promise<void>;
+  expensePage: number;
+  expensePageSize: number;
+  expenseTotal: number;
+  setExpensePage: (page: number) => void;
+  fetchExpenses: (groupId: string, page?: number) => Promise<void>;
   createExpense: (
     groupId: string,
     description: string,
@@ -42,8 +46,11 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [expensesError, setExpensesError] = useState('');
   const [expenseStatus, setExpenseStatus] = useState('');
+  const [expensePage, setExpensePage] = useState(1);
+  const expensePageSize = 4;
+  const [expenseTotal, setExpenseTotal] = useState(0);
 
-  const fetchExpenses = useCallback(async (groupId: string) => {
+  const fetchExpenses = useCallback(async (groupId: string, page = expensePage) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -51,8 +58,9 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
     setExpensesError('');
     setExpensesLoading(true);
     try {
-      const data = await fetchExpensesRequest(token, groupId, 1, 50);
+      const data = await fetchExpensesRequest(token, groupId, page, expensePageSize);
       setExpenses(data.items);
+      setExpenseTotal(data.total);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load expenses';
       setExpensesError(message);
@@ -60,7 +68,7 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
     } finally {
       setExpensesLoading(false);
     }
-  }, [token]);
+  }, [token, expensePage, expensePageSize]);
 
   const createExpense = useCallback(async (
     groupId: string,
@@ -118,6 +126,8 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!loggedIn) {
       setExpenses([]);
+      setExpenseTotal(0);
+      setExpensePage(1);
       setExpensesError('');
       setExpensesLoading(false);
       setExpenseStatus('');
@@ -130,6 +140,10 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       expensesLoading,
       expensesError,
       expenseStatus,
+      expensePage,
+      expensePageSize,
+      expenseTotal,
+      setExpensePage,
       fetchExpenses,
       createExpense,
       deleteExpense,
@@ -139,6 +153,10 @@ export function ExpenseProvider({ children }: PropsWithChildren) {
       expensesLoading,
       expensesError,
       expenseStatus,
+      expensePage,
+      expensePageSize,
+      expenseTotal,
+      setExpensePage,
       fetchExpenses,
       createExpense,
       deleteExpense,

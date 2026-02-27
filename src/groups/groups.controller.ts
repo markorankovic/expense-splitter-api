@@ -36,8 +36,8 @@ export class GroupsController {
   }
 
   @Get(':id')
-  get(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.groupsService.getGroup(req.user.id, id);
+  get(@Req() req: AuthRequest, @Param('id') id: string, @Query() query: PaginationDto) {
+    return this.groupsService.getGroup(req.user.id, id, query);
   }
 
   @Patch(':id')
@@ -66,5 +66,14 @@ export class GroupsController {
     @Param('userId') userId: string,
   ) {
     return this.groupsService.removeMember(req.user.id, id, userId);
+  }
+
+  @Get(':id/members/:userId')
+  getMember(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.groupsService.getMember(req.user.id, id, userId);
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, type SubmitEvent } from 'react';
+import { PaginationControls } from './PaginationControls';
 import { useGroups } from '../contexts/GroupContext';
 import { useMe } from '../contexts/MeContext';
 
@@ -9,10 +10,14 @@ export function GroupsPanel() {
     groupsLoading,
     groupsError,
     activeGroupId,
+    groupPage,
+    groupPageSize,
+    groupTotal,
     fetchGroups,
     createGroup,
     updateGroup,
     deleteGroup,
+    setGroupPage,
     selectActiveGroup,
   } = useGroups();
   const [groupName, setGroupName] = useState('');
@@ -21,8 +26,8 @@ export function GroupsPanel() {
   const [groupStatus, setGroupStatus] = useState('');
 
   useEffect(() => {
-    void fetchGroups().catch(() => {});
-  }, [fetchGroups]);
+    void fetchGroups(groupPage).catch(() => {});
+  }, [fetchGroups, groupPage]);
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,7 +36,7 @@ export function GroupsPanel() {
     }
     try {
       await createGroup(groupName.trim());
-      await fetchGroups();
+      await fetchGroups(groupPage);
       setGroupName('');
       setGroupStatus('Group created.');
     } catch (err) {
@@ -48,7 +53,7 @@ export function GroupsPanel() {
     setGroupStatus('');
     try {
       await updateGroup(editingGroupId, editName.trim());
-      await fetchGroups();
+      await fetchGroups(groupPage);
       setEditingGroupId(null);
       setEditName('');
       setGroupStatus('Group updated.');
@@ -64,7 +69,7 @@ export function GroupsPanel() {
     setGroupStatus('');
     try {
       await deleteGroup(groupId);
-      await fetchGroups();
+      await fetchGroups(groupPage);
       setGroupStatus('Group deleted.');
     } catch (err) {
       setGroupStatus(err instanceof Error ? err.message : 'Failed to delete group');
@@ -180,6 +185,13 @@ export function GroupsPanel() {
           ))}
         </ul>
       )}
+      <PaginationControls
+        currentPage={groupPage}
+        pageSize={groupPageSize}
+        totalItems={groupTotal}
+        loading={groupsLoading}
+        onPageChange={setGroupPage}
+      />
     </div>
   );
 }

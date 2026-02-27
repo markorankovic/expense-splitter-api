@@ -15,17 +15,20 @@ import {
 } from '../api';
 import type { Group } from '../types';
 import { useAuth } from './AuthContext';
-import { useMe } from './MeContext';
 
 type GroupContextValue = {
   groups: Group[];
   groupsLoading: boolean;
   groupsError: string;
   activeGroupId: string | null;
-  fetchGroups: () => Promise<void>;
+  groupPage: number;
+  groupPageSize: number;
+  groupTotal: number;
+  fetchGroups: (page?: number) => Promise<void>;
   createGroup: (name: string) => Promise<void>;
   updateGroup: (groupId: string, name: string) => Promise<void>;
   deleteGroup: (groupId: string) => Promise<void>;
+  setGroupPage: (page: number) => void;
   selectActiveGroup: (groupId: string) => void;
 };
 
@@ -33,22 +36,14 @@ const GroupContext = createContext<GroupContextValue | undefined>(undefined);
 
 export function GroupProvider({ children }: PropsWithChildren) {
   const { token, loggedIn } = useAuth();
-  const { meId } = useMe();
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
-  const orderedGroups = useMemo(
-    () =>
-      [...groups].sort((a, b) => {
-        const aOwned = a.ownerId === meId ? 1 : 0;
-        const bOwned = b.ownerId === meId ? 1 : 0;
-        return bOwned - aOwned;
-      }),
-    [groups, meId],
-  );
-
-  const fetchGroups = useCallback(async () => {
+  const [groupPage, setGroupPage] = useState(1);
+  const groupPageSize = 4;
+  const [groupTotal, setGroupTotal] = useState(0);
+  const fetchGroups = useCallback(async (page = groupPage) => {
     if (!token) {
       throw new Error('Not authenticated');
     }
@@ -56,8 +51,9 @@ export function GroupProvider({ children }: PropsWithChildren) {
     setGroupsError('');
     setGroupsLoading(true);
     try {
-      const data = await fetchGroupsRequest(token, 1, 50);
+      const data = await fetchGroupsRequest(token, page, groupPageSize);
       setGroups(data.items);
+      setGroupTotal(data.total);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load groups';
       setGroupsError(message);
@@ -65,7 +61,7 @@ export function GroupProvider({ children }: PropsWithChildren) {
     } finally {
       setGroupsLoading(false);
     }
-  }, [token]);
+  }, [token, groupPage, groupPageSize]);
 
   const createGroup = useCallback(async (name: string) => {
     if (!token || !name) {
@@ -118,26 +114,28 @@ export function GroupProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!loggedIn) {
       setGroups([]);
+      setGroupTotal(0);
       setGroupsError('');
       setGroupsLoading(false);
       setActiveGroupId(null);
+      setGroupPage(1);
       return;
     }
     setActiveGroupId(null);
   }, [loggedIn]);
 
   useEffect(() => {
-    if (!orderedGroups.length) {
+    if (!groups.length) {
       setActiveGroupId(null);
       return;
     }
     if (
       !activeGroupId ||
-      !orderedGroups.some((group) => group.id === activeGroupId)
+      !groups.some((group) => group.id === activeGroupId)
     ) {
-      setActiveGroupId(orderedGroups[0].id);
+      setActiveGroupId(groups[0].id);
     }
-  }, [orderedGroups, activeGroupId]);
+  }, [groups, activeGroupId]);
 
   const selectActiveGroup = (groupId: string) => {
     setActiveGroupId(groupId);
@@ -145,25 +143,33 @@ export function GroupProvider({ children }: PropsWithChildren) {
 
   const value = useMemo(
     () => ({
-      groups: orderedGroups,
+      groups,
       groupsLoading,
       groupsError,
       activeGroupId,
+      groupPage,
+      groupPageSize,
+      groupTotal,
       fetchGroups,
       createGroup,
       updateGroup,
       deleteGroup,
+      setGroupPage,
       selectActiveGroup,
     }),
     [
-      orderedGroups,
+      groups,
       groupsLoading,
       groupsError,
       activeGroupId,
+      groupPage,
+      groupPageSize,
+      groupTotal,
       fetchGroups,
       createGroup,
       updateGroup,
       deleteGroup,
+      setGroupPage,
       selectActiveGroup,
     ],
   );

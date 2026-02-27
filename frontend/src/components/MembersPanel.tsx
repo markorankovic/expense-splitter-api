@@ -4,28 +4,45 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
 import { useMe } from '../contexts/MeContext';
+import { PaginationControls } from './PaginationControls';
 
 export function MembersPanel() {
   const { groups, activeGroupId } = useGroups();
   const { meId } = useMe();
-  const { fetchExpenses } = useExpenses();
-  const { membersError, membersLoading, members, fetchMembers, addMember, removeMember } =
-    useMembers();
+  const { expensePage, fetchExpenses } = useExpenses();
+  const {
+    membersError,
+    membersLoading,
+    members,
+    memberPage,
+    memberPageSize,
+    memberTotal,
+    setMemberPage,
+    fetchMembers,
+    addMember,
+    removeMember,
+  } = useMembers();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [memberEmail, setMemberEmail] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
-  const orderedMembers = [...members].sort((a, b) => {
-    const aIsMe = a.id === meId ? 1 : 0;
-    const bIsMe = b.id === meId ? 1 : 0;
-    return bIsMe - aIsMe;
-  });
+  const memberTotalPages = Math.max(1, Math.ceil(memberTotal / memberPageSize));
 
   useEffect(() => {
     if (!activeGroupId) {
       return;
     }
-    void fetchMembers(activeGroupId).catch(() => {});
-  }, [activeGroupId, fetchMembers]);
+    void fetchMembers(activeGroupId, memberPage).catch(() => {});
+  }, [activeGroupId, memberPage, fetchMembers]);
+
+  useEffect(() => {
+    setMemberPage(1);
+  }, [activeGroupId]);
+
+  useEffect(() => {
+    if (memberPage > memberTotalPages) {
+      setMemberPage(memberTotalPages);
+    }
+  }, [memberPage, memberTotalPages, setMemberPage]);
 
   if (!activeGroupId) {
     return null;
@@ -43,7 +60,7 @@ export function MembersPanel() {
     try {
       await addMember(activeGroupId, memberEmail.trim());
       setMemberStatus('Member added.');
-      await fetchMembers(activeGroupId);
+      await fetchMembers(activeGroupId, memberPage);
       await fetchBalancesAndSettle(activeGroupId);
       setMemberEmail('');
     } catch (err) {
@@ -55,8 +72,8 @@ export function MembersPanel() {
     setMemberStatus('');
     try {
       await removeMember(activeGroupId, memberId);
-      await fetchMembers(activeGroupId);
-      await fetchExpenses(activeGroupId);
+      await fetchMembers(activeGroupId, memberPage);
+      await fetchExpenses(activeGroupId, expensePage);
       await fetchBalancesAndSettle(activeGroupId);
       setMemberStatus('Member removed.');
     } catch (err) {
@@ -96,7 +113,7 @@ export function MembersPanel() {
           <p className="muted">No members yet.</p>
         ) : (
           <ul>
-            {orderedMembers.map((member) => (
+            {members.map((member) => (
               <li key={member.id}>
                 <div className="member-email-box">
                   <span className="member-email" title={member.email}>
@@ -126,6 +143,13 @@ export function MembersPanel() {
           </ul>
         )}
       </div>
+      <PaginationControls
+        currentPage={memberPage}
+        pageSize={memberPageSize}
+        totalItems={memberTotal}
+        loading={membersLoading}
+        onPageChange={setMemberPage}
+      />
     </div>
   );
 }

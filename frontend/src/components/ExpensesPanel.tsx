@@ -5,6 +5,7 @@ import { useGroups } from '../contexts/GroupContext';
 import { useMembers } from '../contexts/MemberContext';
 import { useMe } from '../contexts/MeContext';
 import { formatMoney } from '../utils/money';
+import { PaginationControls } from './PaginationControls';
 
 export function ExpensesPanel() {
   const { groups, activeGroupId } = useGroups();
@@ -13,27 +14,38 @@ export function ExpensesPanel() {
     expensesError,
     expensesLoading,
     expenses,
+    expensePage,
+    expensePageSize,
+    expenseTotal,
+    setExpensePage,
     fetchExpenses,
     createExpense,
     deleteExpense,
   } = useExpenses();
-  const { membersLoading, members, formatMemberLabel } = useMembers();
+  const { membersLoading, members, formatMemberLabel, ensureMemberEmails } = useMembers();
   const { meId } = useMe();
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
-  const orderedExpenses = [...expenses].sort((a, b) => {
-    const aMine = a.paidByUserId === meId ? 1 : 0;
-    const bMine = b.paidByUserId === meId ? 1 : 0;
-    return bMine - aMine;
-  });
 
   useEffect(() => {
     if (!activeGroupId) {
       return;
     }
-    void fetchExpenses(activeGroupId).catch(() => {});
-  }, [activeGroupId, fetchExpenses]);
+    void fetchExpenses(activeGroupId, expensePage).catch(() => {});
+  }, [activeGroupId, expensePage, fetchExpenses]);
+
+  useEffect(() => {
+    if (!activeGroupId || expenses.length === 0) {
+      return;
+    }
+    const paidByUserIds = expenses.map((expense) => expense.paidByUserId);
+    void ensureMemberEmails(activeGroupId, paidByUserIds).catch(() => {});
+  }, [activeGroupId, expenses, ensureMemberEmails]);
+
+  useEffect(() => {
+    setExpensePage(1);
+  }, [activeGroupId, setExpensePage]);
 
   if (!activeGroupId) {
     return null;
@@ -46,7 +58,7 @@ export function ExpensesPanel() {
     event.preventDefault();
     try {
       await createExpense(activeGroupId, expenseDescription, expenseAmount);
-      await fetchExpenses(activeGroupId);
+      await fetchExpenses(activeGroupId, expensePage);
       await fetchBalancesAndSettle(activeGroupId).catch(() => {});
       setExpenseDescription('');
       setExpenseAmount('');
@@ -58,7 +70,7 @@ export function ExpensesPanel() {
   const handleDeleteExpense = async (expenseId: string) => {
     try {
       await deleteExpense(activeGroupId, expenseId);
-      await fetchExpenses(activeGroupId);
+      await fetchExpenses(activeGroupId, expensePage);
       await fetchBalancesAndSettle(activeGroupId).catch(() => {});
     } catch {
       return;
@@ -111,7 +123,7 @@ export function ExpensesPanel() {
         <p className="muted">No expenses yet.</p>
       ) : (
         <ul className="expenses-list">
-          {orderedExpenses.map((expense) => (
+          {expenses.map((expense) => (
             <li key={expense.id}>
               <div className="expense-content">
                 <div>
@@ -140,6 +152,13 @@ export function ExpensesPanel() {
           ))}
         </ul>
       )}
+      <PaginationControls
+        currentPage={expensePage}
+        pageSize={expensePageSize}
+        totalItems={expenseTotal}
+        loading={expensesLoading}
+        onPageChange={setExpensePage}
+      />
     </div>
   );
 }
