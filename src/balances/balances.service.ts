@@ -55,9 +55,13 @@ export class BalancesService {
     const page = pagination?.page ?? 1;
     const pageSize = pagination?.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
-    const balances = (await this.computeAllBalances(userId, groupId)).filter(
-      (entry) => entry.balance !== 0,
-    );
+    const balances = (await this.computeAllBalances(userId, groupId))
+      .filter((entry) => entry.balance !== 0)
+      .sort((a, b) => {
+        const aIsMe = a.userId === userId ? 1 : 0;
+        const bIsMe = b.userId === userId ? 1 : 0;
+        return bIsMe - aIsMe;
+      });
 
     return {
       groupId,
@@ -113,6 +117,12 @@ export class BalancesService {
         j += 1;
       }
     }
+
+    transfers.sort((a, b) => {
+      const aRelevant = a.fromUserId === userId || a.toUserId === userId ? 1 : 0;
+      const bRelevant = b.fromUserId === userId || b.toUserId === userId ? 1 : 0;
+      return bRelevant - aRelevant;
+    });
 
     return {
       groupId,

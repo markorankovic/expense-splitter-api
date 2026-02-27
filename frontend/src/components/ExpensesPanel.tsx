@@ -27,11 +27,6 @@ export function ExpensesPanel() {
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
-  const orderedExpenses = [...expenses].sort((a, b) => {
-    const aMine = a.paidByUserId === meId ? 1 : 0;
-    const bMine = b.paidByUserId === meId ? 1 : 0;
-    return bMine - aMine;
-  });
 
   useEffect(() => {
     if (!activeGroupId) {
@@ -41,12 +36,12 @@ export function ExpensesPanel() {
   }, [activeGroupId, expensePage, fetchExpenses]);
 
   useEffect(() => {
-    if (!activeGroupId || orderedExpenses.length === 0) {
+    if (!activeGroupId || expenses.length === 0) {
       return;
     }
-    const paidByUserIds = orderedExpenses.map((expense) => expense.paidByUserId);
+    const paidByUserIds = expenses.map((expense) => expense.paidByUserId);
     void ensureMemberEmails(activeGroupId, paidByUserIds).catch(() => {});
-  }, [activeGroupId, orderedExpenses, ensureMemberEmails]);
+  }, [activeGroupId, expenses, ensureMemberEmails]);
 
   useEffect(() => {
     setExpensePage(1);
@@ -128,7 +123,7 @@ export function ExpensesPanel() {
         <p className="muted">No expenses yet.</p>
       ) : (
         <ul className="expenses-list">
-          {orderedExpenses.map((expense) => (
+          {expenses.map((expense) => (
             <li key={expense.id}>
               <div className="expense-content">
                 <div>

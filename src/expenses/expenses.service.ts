@@ -75,23 +75,24 @@ export class ExpensesService {
     const pageSize = pagination?.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
     const where = { groupId };
-
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.expense.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-        select: {
-          id: true,
-          description: true,
-          amount: true,
-          paidByUserId: true,
-          createdAt: true,
-        },
-      }),
-      this.prisma.expense.count({ where }),
-    ]);
+    const allExpenses = await this.prisma.expense.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        description: true,
+        amount: true,
+        paidByUserId: true,
+        createdAt: true,
+      },
+    });
+    const sorted = allExpenses.sort((a, b) => {
+      const aMine = a.paidByUserId === userId ? 1 : 0;
+      const bMine = b.paidByUserId === userId ? 1 : 0;
+      return bMine - aMine;
+    });
+    const total = sorted.length;
+    const items = sorted.slice(skip, skip + pageSize);
 
     return { items, page, pageSize, total };
   }

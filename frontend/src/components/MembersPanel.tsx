@@ -25,11 +25,6 @@ export function MembersPanel() {
   const { fetchBalancesAndSettle } = useBalancesAndSettle();
   const [memberEmail, setMemberEmail] = useState('');
   const [memberStatus, setMemberStatus] = useState('');
-  const orderedMembers = [...members].sort((a, b) => {
-    const aIsMe = a.id === meId ? 1 : 0;
-    const bIsMe = b.id === meId ? 1 : 0;
-    return bIsMe - aIsMe;
-  });
   const memberTotalPages = Math.max(1, Math.ceil(memberTotal / memberPageSize));
 
   useEffect(() => {
@@ -118,7 +113,7 @@ export function MembersPanel() {
           <p className="muted">No members yet.</p>
         ) : (
           <ul>
-            {orderedMembers.map((member) => (
+            {members.map((member) => (
               <li key={member.id}>
                 <div className="member-email-box">
                   <span className="member-email" title={member.email}>

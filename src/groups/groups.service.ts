@@ -45,17 +45,18 @@ export class GroupsService {
     const pageSize = pagination?.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
     const where = { members: { some: { userId } } };
-
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.group.findMany({
-        where,
-        select: { id: true, name: true, createdAt: true, ownerId: true },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-      }),
-      this.prisma.group.count({ where }),
-    ]);
+    const allGroups = await this.prisma.group.findMany({
+      where,
+      select: { id: true, name: true, createdAt: true, ownerId: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const sorted = allGroups.sort((a, b) => {
+      const aOwned = a.ownerId === userId ? 1 : 0;
+      const bOwned = b.ownerId === userId ? 1 : 0;
+      return bOwned - aOwned;
+    });
+    const total = sorted.length;
+    const items = sorted.slice(skip, skip + pageSize);
 
     return { items, page, pageSize, total };
   }
@@ -83,22 +84,22 @@ export class GroupsService {
       throw new NotFoundException('Group not found');
     }
 
-    const [members, total] = await this.prisma.$transaction([
-      this.prisma.groupMember.findMany({
-        where: { groupId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-        select: {
-          role: true,
-          createdAt: true,
-          user: { select: { id: true, email: true } },
-        },
-      }),
-      this.prisma.groupMember.count({
-        where: { groupId },
-      }),
-    ]);
+    const allMembers = await this.prisma.groupMember.findMany({
+      where: { groupId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        role: true,
+        createdAt: true,
+        user: { select: { id: true, email: true } },
+      },
+    });
+    const sortedMembers = allMembers.sort((a, b) => {
+      const aIsMe = a.user.id === userId ? 1 : 0;
+      const bIsMe = b.user.id === userId ? 1 : 0;
+      return bIsMe - aIsMe;
+    });
+    const total = sortedMembers.length;
+    const members = sortedMembers.slice(skip, skip + pageSize);
 
     return {
       id: group.id,
