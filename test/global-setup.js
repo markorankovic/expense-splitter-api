@@ -39,6 +39,19 @@ module.exports = async () => {
 
   execFileSync(
     'npx',
+    ['prisma', 'generate'],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+      },
+      stdio: 'inherit',
+    },
+  );
+
+  execFileSync(
+    'npx',
     ['prisma', 'migrate', 'deploy'],
     {
       cwd: process.cwd(),
