@@ -67,6 +67,19 @@ npm test
 npm run test:e2e
 ```
 
+Includes e2e tests for auth and group/expense flows.
+
+## E2E tests
+- E2E tests run against a separate Postgres database: `splitter_e2e`, configured via `.env.test`.
+- The schema is applied automatically before Jest runs via `prisma migrate deploy` in the e2e global setup.
+- Each suite resets data with Prisma `deleteMany()` in dependency order for deterministic runs.
+
+Run them with:
+```bash
+docker-compose up -d
+npm run test:e2e
+```
+
 ## API overview
 Core capabilities:
 1. Health check
